@@ -1,0 +1,27 @@
+{
+  "name": "jsc8",
+  "description": "The official C8 JavaScript driver.",
+  "main": "lib/index.js",
+  "keywords": [
+    "c8",
+    "c8db",
+    "c8ql",
+    "nosql",
+    "client",
+    "driver",
+    "api",
+    "http",
+    "rest"
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/macrometacorp/jsC8",
+  "bugs": {
+    "url": "https://github.com/macrometacorp/jsC8/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/macrometacorp/jsC8.git"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

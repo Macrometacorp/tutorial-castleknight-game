@@ -1,0 +1,103 @@
+<!doctype html>
+
+<head>
+  <title>Global Multi Player Game</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="./css/chatengine.css">
+  <style>
+    .container1 {
+      float: left;
+      width: 35%;
+      height: 250px;
+      z-index: 4;
+    }
+
+    .container2 {
+      float: left;
+      width: 65%;
+      height: 250px;
+      z-index: 4;
+    }
+
+    .container3 {
+      float: left;
+      width: 65%;
+      height: 250px;
+      z-index: 3;
+    }
+
+    .container4 {
+      float: left;
+      width: 35%;
+      height: 250px;
+      z-index: 3;
+    }
+
+    .navigation {
+      position: relative;
+      height: 100%;
+      background-color: #19a2c6;
+      box-shadow: 0px 2px 4px #888888;
+      z-index: 6;
+    }
+
+    .backdrop {
+      position: relative;
+      background-color: #E1E2E1;
+      box-shadow: 0px 5px 4px #888888;
+      z-index: 5;
+    }
+
+    .game {
+      display: inline-block;
+      /*border-style: solid;
+      border-width: 5px;
+      border-color: black;
+      box-shadow: 0px 5px 4px #888888;*/
+    }
+
+    .flag {
+      width: 50px;
+      padding-top: 5px;
+      background: #d02129;
+      text-align: center;
+      height: 100%;
+      padding-right: 100px;
+      margin-left: 20px;
+      z-index: 6;
+      position: relative;
+    }
+
+    .instructions {
+      width: 100%;
+    }
+
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navigation">
+
+  </div>
+  <div class="backdrop">
+    <br>
+    <center>
+      <div class="game" id="game"></div>
+    </center>
+    <br>
+    <center>Controls: <big><big>← ↑ →</big></big></center>
+    <br>
+  </div>
+  <div class="instructions"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chat-engine@0.9.5/dist/chat-engine.min.js"></script>
+  <script src="./js/Config.js"></script>
+  <script src="./js/chatEngine.js"></script>
+  <script src="./bower_components/phaser/build/phaser.min.js"></script>
+  <script src="./bower_components/jsc8/lib/web.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
