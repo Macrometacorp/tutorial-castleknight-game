@@ -8,26 +8,14 @@ This real time multiplayer game is a collaborative puzzle game that encourages y
 
 ## 2. Pre-requisite
 
-The following need to be already available in the federation before staring the game.
+In Config.js, edit the following parameters:-
 
 ```js
-tenant: demo
-password: xxxx
-```
-
-Login with `demo` tenant, `demo` user and create the following:
-
-
-Now, in `_system` fabric create  a  collection - `occupancy` with the said data:
-
-```js
-collection - occupancy { one:0, two:0, three:0 }
-```
-
-> Note: To change the cluster url with which the game connects, goto `Config.js` file and change the following value:
-
-```js
-var cluster = "try.macrometa.io";
+    var cluster = "try.macrometa.io";
+    var tenant = "tenantname";
+    var fabric_name = "fabric";
+    var username = "user";
+    var password = "password";
 ```
 
 ## 3. How to run locally

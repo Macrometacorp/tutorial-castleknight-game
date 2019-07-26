@@ -35,27 +35,41 @@ const DB_NAME = window.DB_NAME = "_system";
 const BASE_URL = window.BASE_URL = cluster;
 const TENANT = window.TENANT = "demo";
 
+
 const fabric = window.jsC8(`https://${BASE_URL}`);
 
 async function login() {
-  await fabric.login(TENANT, "root", "demo");
-  fabric.useTenant(TENANT);
-  fabric.useFabric(DB_NAME);
+  await fabric.login(tenant, username, password);
+  fabric.useTenant(tenant);
+  fabric.useFabric(fabric_name);
 }
 
-login();
+async function collection() {
+  await fabric.login(tenant, username, password);
+  fabric.useTenant(tenant);
+  fabric.useFabric(fabric_name);
+  const collection = fabric.collection('occupancy');
+  const result = await collection.exists();
+  if (result === false) {
+    await collection.create()
+    console.log("Collection Creation")
+    const data = { _key: "123", one: 0, two: 0, three: 0 };
+    const info = await collection.save(data);
+  }
+}
 
-function init(currentLevel) {
+async function init(currentLevel) {
+  await login();
+  await collection();
   console.log("attempt init v232 level", currentLevel);
   myCurrentLevel = currentLevel;
   window.globalCurrentLevel = currentLevel; // Get the current level and set it to the global level
   window.currentFireChannelName = 'realtimephaserFire2';
   window.currentChannelName = `realtimephaser${currentLevel}`; // Create the channel name + the current level. This way each level is on its own channel.
 
-  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${TENANT}/c8global.${DB_NAME}/stream-level-${currentLevel}/${window.UniqueID}`;
+  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${tenant}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
 
-  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${TENANT}/c8global.${DB_NAME}/stream-level-${currentLevel}/${window.UniqueID}`;
-
+  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${tenant}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
   // Streams
   var consumer = window.macrometaConsumer = new WebSocket(consumerURL);
 
@@ -161,10 +175,12 @@ function init(currentLevel) {
     console.log("attemptSendAnIntMessage, which when received by consumers, starts loading");
     window.macrometaProducer.send(prodMsg);
   }
+
 }
 
 /// Start for initialization only called once
 function start() {
+
   //publish gibberish data every 5000ms to whatever producer is the curent one
   setInterval(() => {
     if (window.macrometaProducer) window.macrometaProducer.send(JSON.stringify({ 'payload': 'noop' }));
@@ -210,6 +226,7 @@ async function makeOccupancyQuery(queryToMake, isNegative) {
       case 1: levelWord = "two"; break
       case 2: levelWord = "three"; break
     }
+
     if (!isNegative || isNegative == null || isNegative == undefined) queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: doc.${levelWord} + 1} IN occupancy RETURN doc`;
     else {
       queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: doc.${levelWord} - 1} IN occupancy RETURN doc`;
