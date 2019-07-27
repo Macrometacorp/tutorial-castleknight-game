@@ -31,9 +31,9 @@ window.PRESENCE_ACTION_TIMEOUT = 'timeout';
 const TYPE_MESSAGE = 1;
 const TYPE_PRESENCE = 2;
 
-const DB_NAME = window.DB_NAME = "_system";
+const DB_NAME = window.DB_NAME = fabric_name;
 const BASE_URL = window.BASE_URL = cluster;
-const TENANT = window.TENANT = "demo";
+const TENANT = window.TENANT = tenant;
 
 
 const fabric = window.jsC8(`https://${BASE_URL}`);
@@ -57,6 +57,8 @@ async function collection() {
     const info = await collection.save(data);
   }
 }
+
+login();
 
 async function init(currentLevel) {
   await login();
