@@ -58,7 +58,6 @@ async function collection() {
   }
 }
 
-login();
 
 async function init(currentLevel) {
   await login();
