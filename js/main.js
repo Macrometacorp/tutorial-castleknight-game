@@ -53,8 +53,9 @@ async function collection() {
   if (result === false) {
     await collection.create()
     console.log("Collection Creation")
-    const data = { _key: "123", one: 0, two: 0, three: 0 };
+    const data = { one: 0, two: 0, three: 0 };
     const info = await collection.save(data);
+    console.log(info)
   }
 }
 
@@ -218,6 +219,7 @@ function start() {
 }
 const QUERY_READ = "FOR doc IN occupancy RETURN doc";
 const QUERY_UPDATE = "UPDATE";//`FOR doc IN occupancy REPLACE doc WITH ${JSON.stringify(allOccupancyObj)} IN occupancy`;
+
 async function makeOccupancyQuery(queryToMake, isNegative) {
   if (queryToMake === QUERY_UPDATE) {
     let levelWord = "one";
@@ -227,10 +229,25 @@ async function makeOccupancyQuery(queryToMake, isNegative) {
       case 1: levelWord = "two"; break
       case 2: levelWord = "three"; break
     }
-
-    if (!isNegative || isNegative == null || isNegative == undefined) queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: doc.${levelWord} + 1} IN occupancy RETURN doc`;
+    let query = `FOR doc IN occupancy RETURN doc.${levelWord}`
+    let level = await fabric.query(query);
+    level = level._result[0]
+    if (!isNegative || isNegative == null || isNegative == undefined){
+      if (level+1 >= 0){
+      queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: doc.${levelWord} + 1} IN occupancy RETURN doc`;
+      }
+      else{
+        queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: 1} IN occupancy RETURN doc`;
+      }
+    } 
     else {
+      if (level-1 >= 0){
       queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: doc.${levelWord} - 1} IN occupancy RETURN doc`;
+      }
+      else{
+        queryToMake = "FOR " + `doc IN occupancy UPDATE doc WITH {${levelWord}: 0} IN occupancy RETURN doc`;
+        
+      }
     }
   }
 
