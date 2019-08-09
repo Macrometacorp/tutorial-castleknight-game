@@ -18,7 +18,7 @@ In Config.js, edit the following parameters:-
     var password = "password";
 ```
 
-## 3. How to run locally
+## 3. How to run app locally
 
 To run the game locally a server has to be started to serve the webpage.
 
@@ -32,7 +32,7 @@ If you are using Windows download <a href="https://www.apachefriends.org/index.h
 
 Once you have your server up and running, go to ``http://localhost:8000/`` on your machine.
 
-## 4. Building and deploying GUI
+## 4. How to deploy app on S3
 
 Go outside the current working directory, `tutorial-castleknight-game` in this case.
 
@@ -58,3 +58,7 @@ A sample `bucket policy` is:
 ```
 
 Now goto the `Properties` tab in the aws console for this bucket and open `Static website hosting` option. Then select the option `Use this bucket to host a website` and provide `index.html` for both `Index document` and `Error document` text fields. Click on save and the website is now live!
+
+## 5. Already Deployed Demo
+
+Go to `http://try.macrometa.castleknight.s3-website.us-east-2.amazonaws.com/` to start playing the game.
