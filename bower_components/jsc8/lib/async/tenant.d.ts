@@ -1,10 +1,12 @@
 import { Connection } from "./connection";
 export declare class Tenant {
     _connection: Connection;
-    name: string;
-    constructor(connection: Connection, tenantName: string);
+    name?: string;
+    email: string;
+    constructor(connection: Connection, email: string, tenantName?: string);
     createTenant(passwd: string, extra?: object, dcList?: string): Promise<any>;
     dropTenant(): Promise<any>;
+    getTenantEdgeLocations(): Promise<any>;
     tenantDetails(): Promise<any>;
     modifyTenant(passwd: string, extra?: object): Promise<any>;
 }

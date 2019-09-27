@@ -12,9 +12,8 @@ In Config.js, edit the following parameters:-
 
 ```js
     var cluster = "try.macrometa.io";
-    var tenant = "tenantname";
+    var email = "demo@macrometa.io";
     var fabric_name = "fabric";
-    var username = "user";
     var password = "password";
 ```
 

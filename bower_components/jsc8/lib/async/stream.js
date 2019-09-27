@@ -45,22 +45,6 @@ class Stream {
             qs: `local=${this.local}`
         }, res => res.body);
     }
-    compaction() {
-        const urlSuffix = "/compaction";
-        return this._connection.request({
-            method: "GET",
-            path: this._getPath(urlSuffix),
-            qs: `local=${this.local}`
-        }, res => res.body);
-    }
-    triggerCompaction() {
-        const urlSuffix = "/compaction";
-        return this._connection.request({
-            method: "PUT",
-            path: this._getPath(urlSuffix),
-            qs: `local=${this.local}`
-        }, res => res.body);
-    }
     getStreamStatistics() {
         const urlSuffix = "/stats";
         return this._connection.request({
@@ -141,8 +125,8 @@ class Stream {
             qs: `local=${this.local}`
         }, res => res.body);
     }
-    consumer(subscriptionName, callbackObj, dcUrl) {
-        const lowerCaseUrl = dcUrl.toLocaleLowerCase();
+    consumer(subscriptionName, callbackObj, dcName) {
+        const lowerCaseUrl = dcName.toLocaleLowerCase();
         if (lowerCaseUrl.includes("http") || lowerCaseUrl.includes("https"))
             throw "Invalid DC name";
         const { onopen, onclose, onerror, onmessage } = callbackObj;
@@ -152,7 +136,7 @@ class Stream {
         let dbName = this._connection.getFabricName();
         if (!dbName || !tenant)
             throw "Set correct DB and/or tenant name before using.";
-        const consumerUrl = `wss://${dcUrl}/_ws/ws/v2/consumer/${persist}/${tenant}/${region}.${dbName}/${this.name}/${subscriptionName}`;
+        const consumerUrl = `wss://${dcName}/_ws/ws/v2/consumer/${persist}/${tenant}/${region}.${dbName}/${this.name}/${subscriptionName}`;
         this._consumers.push(webSocket_1.ws(consumerUrl));
         const lastIndex = this._consumers.length - 1;
         const consumer = this._consumers[lastIndex];
@@ -181,10 +165,10 @@ class Stream {
                 consumer.send(JSON.stringify(ackMsg));
             }
         });
-        !this._noopProducer && this.noopProducer(dcUrl);
+        !this._noopProducer && this.noopProducer(dcName);
     }
-    noopProducer(dcUrl) {
-        const lowerCaseUrl = dcUrl.toLocaleLowerCase();
+    noopProducer(dcName) {
+        const lowerCaseUrl = dcName.toLocaleLowerCase();
         if (lowerCaseUrl.includes("http") || lowerCaseUrl.includes("https"))
             throw "Invalid DC name";
         const persist = StreamConstants.PERSISTENT;
@@ -193,7 +177,7 @@ class Stream {
         let dbName = this._connection.getFabricName();
         if (!dbName || !tenant)
             throw "Set correct DB and/or tenant name before using.";
-        const noopProducerUrl = `wss://${dcUrl}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.name}`;
+        const noopProducerUrl = `wss://${dcName}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.name}`;
         this._noopProducer = webSocket_1.ws(noopProducerUrl);
         this._noopProducer.on('open', () => {
             this.setIntervalId = setInterval(() => {
@@ -202,11 +186,21 @@ class Stream {
         });
         this._noopProducer.on('error', (e) => console.log("noop producer errored ", e));
     }
-    producer(message, dcUrl) {
+    producer(message, dcName, callbackObj) {
+        let onopen;
+        let onclose;
+        let onmessage;
+        let onerror;
+        if (callbackObj !== undefined) {
+            onopen = callbackObj.onopen;
+            onclose = callbackObj.onclose;
+            onmessage = callbackObj.onmessage;
+            onerror = callbackObj.onerror;
+        }
         if (this._producer === undefined) {
-            if (!dcUrl)
+            if (!dcName)
                 throw "DC name not provided to establish producer connection";
-            const lowerCaseUrl = dcUrl.toLocaleLowerCase();
+            const lowerCaseUrl = dcName.toLocaleLowerCase();
             if (lowerCaseUrl.includes("http") || lowerCaseUrl.includes("https"))
                 throw "Invalid DC name";
             const persist = StreamConstants.PERSISTENT;
@@ -215,22 +209,42 @@ class Stream {
             let dbName = this._connection.getFabricName();
             if (!dbName || !tenant)
                 throw "Set correct DB and/or tenant name before using.";
-            const producerUrl = `wss://${dcUrl}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.name}`;
+            const producerUrl = `wss://${dcName}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.name}`;
             this._producer = webSocket_1.ws(producerUrl);
-            this._producer.on("message", (msg) => console.log('received ack: %s', msg));
+            this._producer.on("message", (msg) => {
+                console.log('received ack: %s', msg);
+                typeof onmessage === 'function' && onmessage(msg);
+            });
             this._producer.on("open", () => {
-                this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message) }));
+                if (!Array.isArray(message)) {
+                    this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message) }));
+                }
+                else {
+                    for (let i = 0; i < message.length; i++) {
+                        this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message[i]) }));
+                    }
+                }
+                typeof onopen === 'function' && onopen();
             });
             this._producer.on('close', (e) => {
                 console.log("Producer connection closed ", e);
+                typeof onclose === 'function' && onclose();
             });
             this._producer.on('error', (e) => {
                 console.log("Producer connection errored ", e);
+                typeof onerror === 'function' && onerror(e);
             });
         }
         else {
             if (this._producer.readyState === this._producer.OPEN) {
-                this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message) }));
+                if (!Array.isArray(message)) {
+                    this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message) }));
+                }
+                else {
+                    for (let i = 0; i < message.length; i++) {
+                        this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message[i]) }));
+                    }
+                }
             }
             else {
                 console.warn("Producer connection not open yet. Please wait.");

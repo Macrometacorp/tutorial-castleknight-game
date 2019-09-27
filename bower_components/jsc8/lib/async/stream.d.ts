@@ -21,8 +21,6 @@ export declare class Stream {
     createStream(): Promise<any>;
     expireMessagesOnAllSubscriptions(expireTimeInSeconds: number): Promise<any>;
     backlog(): Promise<any>;
-    compaction(): Promise<any>;
-    triggerCompaction(): Promise<any>;
     getStreamStatistics(): Promise<any>;
     deleteSubscription(subscription: string): Promise<any>;
     resetSubscriptionToPosition(subscription: string): Promise<any>;
@@ -33,9 +31,9 @@ export declare class Stream {
     skipAllMessages(subscription: string): Promise<any>;
     getSubscriptionList(): Promise<any>;
     terminateStream(): Promise<any>;
-    consumer(subscriptionName: string, callbackObj: wsCallbackObj, dcUrl: string): void;
+    consumer(subscriptionName: string, callbackObj: wsCallbackObj, dcName: string): void;
     private noopProducer;
-    producer(message: string, dcUrl?: string): void;
+    producer(message: string | Array<string>, dcName?: string, callbackObj?: wsCallbackObj): void;
     closeConnections(): void;
 }
 //# sourceMappingURL=stream.d.ts.map

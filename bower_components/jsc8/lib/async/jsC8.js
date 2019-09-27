@@ -3,9 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const c8ql_query_1 = require("./c8ql-query");
 exports.c8ql = c8ql_query_1.c8ql;
 const collection_1 = require("./collection");
+exports.BaseCollection = collection_1.BaseCollection;
 const fabric_1 = require("./fabric");
 exports.Fabric = fabric_1.Fabric;
 const error_1 = require("./error");
+const cursor_1 = require("./cursor");
+exports.ArrayCursor = cursor_1.ArrayCursor;
 function jsC8(config) {
     return new fabric_1.Fabric(config);
 }

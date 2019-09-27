@@ -2,8 +2,9 @@ import { Connection } from "./connection";
 declare class User {
     _connection: Connection;
     user: string;
+    email: string;
     urlPrefix: string;
-    constructor(connection: Connection, user: string);
+    constructor(connection: Connection, user: string, email: string);
     createUser(passwd?: string, active?: boolean, extra?: object): Promise<any>;
     getUserDeatils(): Promise<any>;
     deleteUser(): Promise<any>;

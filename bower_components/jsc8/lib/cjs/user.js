@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class User {
-    constructor(connection, user) {
+    constructor(connection, user, email) {
         this.user = "";
         this.urlPrefix = "/_admin/user";
         this.user = user;
         this._connection = connection;
+        this.email = email;
     }
     createUser(passwd = "", active = true, extra = {}) {
         return this._connection.request({
@@ -13,6 +14,7 @@ class User {
             path: this.urlPrefix,
             body: {
                 user: this.user,
+                email: this.email,
                 passwd: passwd,
                 active,
                 extra
@@ -22,7 +24,7 @@ class User {
     getUserDeatils() {
         return this._connection.request({
             method: "GET",
-            path: `/_admin/user/${this.user}`
+            path: `${this.urlPrefix}/${this.user}`
         }, res => res.body);
     }
     deleteUser() {

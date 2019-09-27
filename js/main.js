@@ -33,20 +33,13 @@ const TYPE_PRESENCE = 2;
 
 const DB_NAME = window.DB_NAME = fabric_name;
 const BASE_URL = window.BASE_URL = cluster;
-const TENANT = window.TENANT = tenant;
 
 
 const fabric = window.jsC8(`https://${BASE_URL}`);
 
-async function login() {
-  await fabric.login(tenant, username, password);
-  fabric.useTenant(tenant);
-  fabric.useFabric(fabric_name);
-}
-
 async function collection() {
-  await fabric.login(tenant, username, password);
-  fabric.useTenant(tenant);
+  const res = await fabric.login(email, password);
+  window.TENANT = res.tenant;
   fabric.useFabric(fabric_name);
   const collection = fabric.collection('occupancy');
   const result = await collection.exists();
@@ -60,7 +53,6 @@ async function collection() {
 
 
 async function init(currentLevel) {
-  await login();
   await collection();
   console.log("attempt init v232 level", currentLevel);
   myCurrentLevel = currentLevel;
@@ -68,9 +60,9 @@ async function init(currentLevel) {
   window.currentFireChannelName = 'realtimephaserFire2';
   window.currentChannelName = `realtimephaser${currentLevel}`; // Create the channel name + the current level. This way each level is on its own channel.
 
-  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${tenant}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
+  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
 
-  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${tenant}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
+  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
   // Streams
   var consumer = window.macrometaConsumer = new WebSocket(consumerURL);
 
@@ -87,7 +79,6 @@ async function init(currentLevel) {
   }
 
   consumer.onmessage = (message) => {
-    console.log("==========");
     const receiveMsg = JSON.parse(message.data);
     const ackMsg = { "messageId": receiveMsg.messageId };
     consumer.send(JSON.stringify(ackMsg));

@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class Tenant {
-    constructor(connection, tenantName) {
+    constructor(connection, email, tenantName) {
         this._connection = connection;
         this.name = tenantName;
+        this.email = email;
     }
     createTenant(passwd, extra = {}, dcList = "") {
         return this._connection.request({
@@ -12,16 +13,26 @@ class Tenant {
             absolutePath: true,
             body: {
                 dcList,
-                name: this.name,
+                email: this.email,
                 passwd,
                 extra
             }
-        }, res => res.body);
+        }, res => {
+            this.name = res.body.tenant;
+            return res.body;
+        });
     }
     dropTenant() {
         return this._connection.request({
             method: "DELETE",
             path: `/tenant/${this.name}`,
+            absolutePath: true
+        }, res => res.body);
+    }
+    getTenantEdgeLocations() {
+        return this._connection.request({
+            method: "GET",
+            path: `/datacenter/_tenant/${this.name}`,
             absolutePath: true
         }, res => res.body);
     }

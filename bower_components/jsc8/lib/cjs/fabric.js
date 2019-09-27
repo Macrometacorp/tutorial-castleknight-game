@@ -18,6 +18,8 @@ const tenant_1 = require("./tenant");
 const stream_1 = require("./stream");
 const route_1 = require("./route");
 const btoa_1 = require("./util/btoa");
+const pipeline_1 = require("./pipeline");
+const event_1 = require("./event");
 const user_1 = require("./user");
 function colToString(collection) {
     if (collection_1.isC8Collection(collection)) {
@@ -83,15 +85,16 @@ class Fabric {
             path: `/database/${fabricName}`
         }, res => res.body);
     }
-    login(tenant, username, password) {
+    login(email, password) {
         return this._connection.request({
             method: "POST",
             path: "/_open/auth",
-            body: { username, password, tenant },
+            body: { email, password },
             absolutePath: true
         }, res => {
             this.useBearerAuth(res.body.jwt);
-            return res.body.jwt;
+            this.useTenant(res.body.tenant);
+            return res.body;
         });
     }
     updateFabricSpotRegion(tenantName, fabricName, datacenter = "") {
@@ -100,6 +103,31 @@ class Fabric {
             path: `_tenant/${tenantName}/_fabric/${fabricName}/database/${datacenter}`,
             absolutePath: true
         }, res => res.body);
+    }
+    getPipelines() {
+        return this._connection.request({
+            method: "GET",
+            path: `/pipelines`,
+        }, res => res.body);
+    }
+    getEvents() {
+        return this._connection.request({
+            method: "GET",
+            path: `/events`,
+        }, res => res.body);
+    }
+    deleteEvents(eventIds) {
+        return this._connection.request({
+            method: "DELETE",
+            path: `/events`,
+            body: JSON.stringify(eventIds),
+        }, res => res.body);
+    }
+    pipeline(pipelineName) {
+        return new pipeline_1.Pipeline(this._connection, pipelineName);
+    }
+    event(entityName, eventId) {
+        return new event_1.Event(this._connection, entityName, eventId);
     }
     // Collection manipulation
     collection(collectionName) {
@@ -268,8 +296,8 @@ class Fabric {
         this._connection.setTenantName(tenantName);
         return this;
     }
-    tenant(tenantName) {
-        return new tenant_1.Tenant(this._connection, tenantName);
+    tenant(email, tenantName) {
+        return new tenant_1.Tenant(this._connection, email, tenantName);
     }
     listTenants() {
         return this._connection.request({
@@ -336,8 +364,8 @@ class Fabric {
         }, res => res.body);
     }
     //user
-    user(user) {
-        return new user_1.default(this._connection, user);
+    user(user, email) {
+        return new user_1.default(this._connection, user, email);
     }
     getAllUsers() {
         return this._connection.request({

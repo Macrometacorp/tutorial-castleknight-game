@@ -6,6 +6,8 @@ import { Graph } from "./graph";
 import { Tenant } from "./tenant";
 import { Stream } from "./stream";
 import { Route } from "./route";
+import { Pipeline } from './pipeline';
+import { Event } from './event';
 import User from "./user";
 export declare type TenantListObj = {
     tenant: string;
@@ -84,8 +86,13 @@ export declare class Fabric {
     listFabrics(): Promise<any>;
     listUserFabrics(): Promise<any>;
     dropFabric(fabricName: string): Promise<any>;
-    login(tenant: string, username: string, password: string): Promise<string>;
+    login(email: string, password: string): Promise<object>;
     updateFabricSpotRegion(tenantName: string, fabricName: string, datacenter?: string): Promise<any>;
+    getPipelines(): Promise<any>;
+    getEvents(): Promise<any>;
+    deleteEvents(eventIds: string[]): Promise<any>;
+    pipeline(pipelineName: string): Pipeline;
+    event(entityName: string, eventId?: number): Event;
     collection(collectionName: string): DocumentCollection;
     edgeCollection(collectionName: string): EdgeCollection;
     listCollections(excludeSystem?: boolean): Promise<any>;
@@ -113,7 +120,7 @@ export declare class Fabric {
     dropFunction(name: string, group?: boolean): Promise<any>;
     version(details?: boolean): Promise<any>;
     useTenant(tenantName: string): this;
-    tenant(tenantName: string): Tenant;
+    tenant(email: string, tenantName?: string): Tenant;
     listTenants(): Promise<any>;
     stream(streamName: string, local: boolean): Stream;
     getStreams(): Promise<any>;
@@ -124,7 +131,7 @@ export declare class Fabric {
     getAllEdgeLocations(): Promise<any>;
     getLocalEdgeLocation(): Promise<any>;
     changeEdgeLocationSpotStatus(dcName: string, status: boolean): Promise<any>;
-    user(user: string): User;
+    user(user: string, email: string): User;
     getAllUsers(): Promise<any>;
     listSavedQueries(): Promise<any>;
     saveQuery(name: string, parameter: any, value: string): any;
