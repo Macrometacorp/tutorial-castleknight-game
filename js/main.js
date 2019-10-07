@@ -34,6 +34,9 @@ const TYPE_PRESENCE = 2;
 const DB_NAME = window.DB_NAME = fabric_name;
 const BASE_URL = window.BASE_URL = cluster;
 
+const CHAT_STREAM_NAME = "stream-chat";
+
+let topic;
 
 const fabric = window.jsC8(`https://${BASE_URL}`);
 
@@ -49,6 +52,11 @@ async function collection() {
     const data = { _key: "123", one: 0, two: 0, three: 0 };
     const info = await collection.save(data);
   }
+
+  // create chat stream
+  const chatStream = fabric.stream(CHAT_STREAM_NAME, false);
+  await chatStream.createStream();
+  window.chatStreamTopic = chatStream.topic;
 }
 
 
@@ -60,9 +68,15 @@ async function init(currentLevel) {
   window.currentFireChannelName = 'realtimephaserFire2';
   window.currentChannelName = `realtimephaser${currentLevel}`; // Create the channel name + the current level. This way each level is on its own channel.
 
-  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
+  // create streams
+  const streamName = `stream-level-${currentLevel}`;
+  const stream = fabric.stream(streamName, false);
+  await stream.createStream();
+  topic = stream.topic;
 
-  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/stream-level-${currentLevel}/${window.UniqueID}`;
+  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
+
+  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
   // Streams
   var consumer = window.macrometaConsumer = new WebSocket(consumerURL);
 

@@ -28,7 +28,7 @@ class BaseCollection {
         this.name = name;
         this._idPrefix = `${this.name}/`;
         this._connection = connection;
-        this.stream = new stream_1.Stream(connection, name, true);
+        this.stream = new stream_1.Stream(connection, name, true, true);
         if (this._connection.c8Major >= 3) {
             this.createCapConstraint = undefined;
         }

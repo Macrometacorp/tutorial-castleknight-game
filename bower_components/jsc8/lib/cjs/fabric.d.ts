@@ -122,7 +122,7 @@ export declare class Fabric {
     useTenant(tenantName: string): this;
     tenant(email: string, tenantName?: string): Tenant;
     listTenants(): Promise<any>;
-    stream(streamName: string, local: boolean): Stream;
+    stream(streamName: string, local: boolean, isCollectionStream?: boolean): Stream;
     getStreams(): Promise<any>;
     listPersistentStreams(local?: boolean): Promise<any>;
     clearBacklog(): Promise<any>;

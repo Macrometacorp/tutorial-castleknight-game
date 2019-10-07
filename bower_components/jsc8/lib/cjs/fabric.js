@@ -307,8 +307,8 @@ class Fabric {
         }, res => res.body);
     }
     //Stream
-    stream(streamName, local) {
-        return new stream_1.Stream(this._connection, streamName, local);
+    stream(streamName, local, isCollectionStream = false) {
+        return new stream_1.Stream(this._connection, streamName, local, isCollectionStream);
     }
     getStreams() {
         return this._connection.request({

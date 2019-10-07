@@ -12,12 +12,14 @@ export declare class Stream {
     private _connection;
     name: string;
     local: boolean;
+    isCollectionStream: boolean;
+    topic: string;
     private _producer;
     private _noopProducer;
     private _consumers;
     private setIntervalId?;
-    constructor(connection: Connection, name: string, local?: boolean);
-    _getPath(urlSuffix?: string): string;
+    constructor(connection: Connection, name: string, local?: boolean, isCollectionStream?: boolean);
+    _getPath(useName: boolean, urlSuffix?: string): string;
     createStream(): Promise<any>;
     expireMessagesOnAllSubscriptions(expireTimeInSeconds: number): Promise<any>;
     backlog(): Promise<any>;
