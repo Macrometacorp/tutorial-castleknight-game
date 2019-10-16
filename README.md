@@ -11,7 +11,7 @@ This real time multiplayer game is a collaborative puzzle game that encourages y
 In Config.js, edit the following parameters:-
 
 ```js
-    var cluster = "try.macrometa.io";
+    var cluster = "gdn1.prod.macrometa.io";
     var email = "demo@macrometa.io";
     var fabric_name = "fabric";
     var password = "password";
@@ -60,4 +60,4 @@ Now goto the `Properties` tab in the aws console for this bucket and open `Stati
 
 ## 5. Already Deployed Demo
 
-Go to `http://try.macrometa.castleknight.s3-website.us-east-2.amazonaws.com/` to start playing the game.
+Go to `http://castleknight.gdn1.s3-website-us-east-1.amazonaws.com/` to start playing the game.
