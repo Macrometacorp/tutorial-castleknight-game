@@ -55,7 +55,7 @@ async function collection() {
   window.chatStreamTopic = chatStream.topic;
 }
 
-async function init(currentLevel) {
+async function init(currentLevel = 0) {
   await collection();
   console.log("attempt init v232 level", currentLevel);
   myCurrentLevel = currentLevel;
@@ -119,7 +119,10 @@ async function init(currentLevel) {
         }
         if (window.globalOtherHeros) {
           // If player exists
-          if (!window.globalOtherHeros.has(messageEvent.message.uuid)) {
+          if (
+            !window.globalOtherHeros.has(messageEvent.message.uuid) &&
+            messageEvent.message.uuid
+          ) {
             // If the message isn't equal to your uuid
             window.globalGameState._addOtherCharacter(
               messageEvent.message.uuid
@@ -345,7 +348,7 @@ window.addEventListener("load", () => {
   game.state.disableVisibilityChange = true; // This allows two windows to be open at the same time and allow both windows to run the update function
   game.state.add("play", window.PlayState);
   game.state.add("loading", window.LoadingState);
-  init(0);
+  init();
   start();
 
   window.StartLoading = function() {
