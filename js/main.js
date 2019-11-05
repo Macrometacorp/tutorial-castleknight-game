@@ -51,8 +51,14 @@ async function collection() {
 
   // create chat stream
   const chatStream = fabric.stream(CHAT_STREAM_NAME, false);
-  await chatStream.createStream();
+  const response = await fabric.listPersistentStreams(false);
+  const streams = response.result;
+ 
+  if (!streams.find(stream => stream.topic === chatStream.topic)) {
+    await chatStream.createStream();
+  }
   window.chatStreamTopic = chatStream.topic;
+
 }
 
 async function init(currentLevel = 0) {
@@ -63,11 +69,17 @@ async function init(currentLevel = 0) {
   window.currentFireChannelName = "realtimephaserFire2";
   window.currentChannelName = `realtimephaser${currentLevel}`; // Create the channel name + the current level. This way each level is on its own channel.
 
-  // create streams
-  const streamName = `stream-level-${currentLevel}`;
-  const stream = fabric.stream(streamName, false);
-  await stream.createStream();
-  topic = stream.topic;
+    // create streams
+    const streamName = `stream-level-${currentLevel}`;
+    const stream = fabric.stream(streamName, false);
+    const response = await fabric.listPersistentStreams(false);
+    const streams = response.result;
+   
+    if (!streams.find(s => s.topic === stream.topic)) {
+      await stream.createStream();
+    }
+    topic = stream.topic;
+  
 
   var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
 
@@ -241,7 +253,7 @@ function start() {
 
   // If person leaves or refreshes the window, run the unsubscribe function
   window.addEventListener("beforeunload", event => {
-    console.log("interfere with close tab");
+    console.log("closing or refreshing tab");
     window.globalUnsubscribe();
 
     return null;
