@@ -81,7 +81,7 @@ async function init(currentLevel = 0) {
     topic = stream.topic;
   
 
-  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
+  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}`;
 
   var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
   // Streams

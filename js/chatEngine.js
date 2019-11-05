@@ -32,7 +32,7 @@ window.initChatEngine = function () {
     </div>
     `;
 
-    let producerURL = `wss://${window.BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}/${window.UniqueID}`;
+    let producerURL = `wss://${window.BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}`;
     let consumerURL = `wss://${window.BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}/${window.UniqueID}`;
 
     var consumer = new WebSocket(consumerURL);
