@@ -18,9 +18,9 @@ const tenant_1 = require("./tenant");
 const stream_1 = require("./stream");
 const route_1 = require("./route");
 const btoa_1 = require("./util/btoa");
-const pipeline_1 = require("./pipeline");
 const event_1 = require("./event");
 const user_1 = require("./user");
+const streamapps_1 = require("./streamapps");
 function colToString(collection) {
     if (collection_1.isC8Collection(collection)) {
         return String(collection.name);
@@ -104,27 +104,18 @@ class Fabric {
             absolutePath: true
         }, res => res.body);
     }
-    getPipelines() {
-        return this._connection.request({
-            method: "GET",
-            path: `/pipelines`,
-        }, res => res.body);
-    }
     getEvents() {
         return this._connection.request({
             method: "GET",
-            path: `/events`,
+            path: `/events`
         }, res => res.body);
     }
     deleteEvents(eventIds) {
         return this._connection.request({
             method: "DELETE",
             path: `/events`,
-            body: JSON.stringify(eventIds),
+            body: JSON.stringify(eventIds)
         }, res => res.body);
-    }
-    pipeline(pipelineName) {
-        return new pipeline_1.Pipeline(this._connection, pipelineName);
     }
     event(entityName, eventId) {
         return new event_1.Event(this._connection, entityName, eventId);
@@ -237,7 +228,7 @@ class Fabric {
     explainQuery(explainQueryObj) {
         return this._connection.request({
             method: "POST",
-            path: "/query/explain",
+            path: "/_api/explain",
             body: Object.assign({}, explainQueryObj)
         }, res => res.body);
     }
@@ -286,7 +277,7 @@ class Fabric {
     version(details = false) {
         return this._connection.request({
             method: "GET",
-            path: `/_tenant/${this._connection.getTenantName()}/_admin/version`,
+            path: `/_fabric/${this._connection.getFabricName()}/_api/version`,
             absolutePath: true,
             qs: { details }
         }, res => res.body);
@@ -356,10 +347,10 @@ class Fabric {
             absolutePath: true
         }, res => res.body);
     }
-    changeEdgeLocationSpotStatus(dcName, status) {
+    changeEdgeLocationSpotStatus(dcName, isSpot) {
         return this._connection.request({
             method: "PUT",
-            path: `/datacenter/${dcName}/${status}`,
+            path: `_api/datacenter/${dcName}/${isSpot}`,
             absolutePath: true
         }, res => res.body);
     }
@@ -383,15 +374,15 @@ class Fabric {
     saveQuery(name, parameter = {}, value) {
         try {
             if (name.includes(" "))
-                throw ("Spaces are not allowed in query name");
+                throw "Spaces are not allowed in query name";
             return this._connection.request({
                 method: "POST",
                 path: "/restql",
                 body: {
-                    "query": {
-                        "name": name,
-                        "parameter": parameter,
-                        "value": value
+                    query: {
+                        name: name,
+                        parameter: parameter,
+                        value: value
                     }
                 }
             }, res => res.body);
@@ -405,7 +396,7 @@ class Fabric {
             method: "POST",
             path: `/restql/execute/${queryName}`,
             body: {
-                "bindVars": bindVars
+                bindVars: bindVars
             }
         }, res => res.body);
     }
@@ -414,10 +405,10 @@ class Fabric {
             method: "PUT",
             path: `/restql/${queryName}`,
             body: {
-                "query": {
-                    "name": name,
-                    "parameter": parameter,
-                    "value": value
+                query: {
+                    name: name,
+                    parameter: parameter,
+                    value: value
                 }
             }
         }, res => res.body);
@@ -433,16 +424,49 @@ class Fabric {
             method: "POST",
             path: `/restql/dynamic`,
             body: {
-                "bindVars": [
-                    bindVars
-                ],
-                "cache": true,
-                "count": true,
-                "options": {
-                    "profile": true
+                bindVars: [bindVars],
+                cache: true,
+                count: true,
+                options: {
+                    profile: true
                 },
-                "query": query
+                query: query
             }
+        }, res => res.body);
+    }
+    // Stream Applications
+    streamApp(appName) {
+        return new streamapps_1.Streamapps(this._connection, appName);
+    }
+    createStreamApp(regions, appDefinition) {
+        return this._connection.request({
+            method: "POST",
+            path: "/_api/streamapps",
+            body: JSON.stringify({
+                definition: appDefinition,
+                regions: regions
+            })
+        }, res => res.body);
+    }
+    getAllStreamApps() {
+        return this._connection.request({
+            method: "GET",
+            path: "/_api/streamapps"
+        }, res => res.body);
+    }
+    validateStreamappDefinition(appDefinition) {
+        return this._connection.request({
+            method: "POST",
+            path: "/_api/streamapps/validate",
+            body: {
+                definition: appDefinition
+            }
+        }, res => res.body);
+    }
+    getSampleStreamApps() {
+        return this._connection.request({
+            method: "GET",
+            path: "/_api/streamapps/samples"
         }, res => res.body);
     }
 }

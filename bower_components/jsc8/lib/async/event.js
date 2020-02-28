@@ -10,7 +10,6 @@ var EntityType;
 (function (EntityType) {
     EntityType["COLLECTION"] = "COLLECTION";
     EntityType["GRAPH"] = "GRAPH";
-    EntityType["PIPELINE"] = "PIPELINE";
     EntityType["AUTH"] = "AUTH";
     EntityType["STREAM"] = "STREAM";
     EntityType["GEOFABRIC"] = "GEOFABRIC";

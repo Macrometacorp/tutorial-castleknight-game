@@ -27,7 +27,7 @@ class GraphVertexCollection extends collection_1.BaseCollection {
     }
     document(documentHandle, graceful = false) {
         const result = this._connection.request({
-            path: `/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`
+            path: `/_api/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`
         }, res => res.body.vertex);
         if (!graceful)
             return result;
@@ -44,7 +44,7 @@ class GraphVertexCollection extends collection_1.BaseCollection {
     save(data, opts) {
         return this._connection.request({
             method: "POST",
-            path: `/graph/${this.graph.name}/vertex/${this.name}`,
+            path: `/_api/graph/${this.graph.name}/vertex/${this.name}`,
             body: data,
             qs: opts
         }, res => res.body.vertex);
@@ -62,7 +62,7 @@ class GraphVertexCollection extends collection_1.BaseCollection {
         }
         return this._connection.request({
             method: "PUT",
-            path: `/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`,
+            path: `/_api/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`,
             body: newValue,
             qs: opts,
             headers
@@ -81,7 +81,7 @@ class GraphVertexCollection extends collection_1.BaseCollection {
         }
         return this._connection.request({
             method: "PATCH",
-            path: `/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`,
+            path: `/_api/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`,
             body: newValue,
             qs: opts,
             headers
@@ -100,7 +100,7 @@ class GraphVertexCollection extends collection_1.BaseCollection {
         }
         return this._connection.request({
             method: "DELETE",
-            path: `/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`,
+            path: `/_api/graph/${this.graph.name}/vertex/${this._documentHandle(documentHandle)}`,
             qs: opts,
             headers
         }, res => res.body.removed);
@@ -116,7 +116,7 @@ class GraphEdgeCollection extends collection_1.EdgeCollection {
     }
     document(documentHandle, graceful = false) {
         const result = this._connection.request({
-            path: `/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`
+            path: `/_api/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`
         }, res => res.body.edge);
         if (!graceful)
             return result;
@@ -139,7 +139,7 @@ class GraphEdgeCollection extends collection_1.EdgeCollection {
         }
         return this._connection.request({
             method: "POST",
-            path: `/graph/${this.graph.name}/edge/${this.name}`,
+            path: `/_api/graph/${this.graph.name}/edge/${this.name}`,
             body: data,
             qs: opts
         }, res => res.body.edge);
@@ -157,7 +157,7 @@ class GraphEdgeCollection extends collection_1.EdgeCollection {
         }
         return this._connection.request({
             method: "PUT",
-            path: `/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`,
+            path: `/_api/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`,
             body: newValue,
             qs: opts,
             headers
@@ -176,7 +176,7 @@ class GraphEdgeCollection extends collection_1.EdgeCollection {
         }
         return this._connection.request({
             method: "PATCH",
-            path: `/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`,
+            path: `/_api/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`,
             body: newValue,
             qs: opts,
             headers
@@ -195,7 +195,7 @@ class GraphEdgeCollection extends collection_1.EdgeCollection {
         }
         return this._connection.request({
             method: "DELETE",
-            path: `/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`,
+            path: `/_api/graph/${this.graph.name}/edge/${this._documentHandle(documentHandle)}`,
             qs: opts,
             headers
         }, res => res.body.removed);
@@ -251,7 +251,8 @@ class Graph {
         }
         return this._connection.request({
             method: "POST",
-            path: `/_api/graph/${this.name}/vertex`
+            path: `/_api/graph/${this.name}/vertex`,
+            body: { collection }
         }, res => res.body.graph);
     }
     removeVertexCollection(collection, dropCollection = false) {

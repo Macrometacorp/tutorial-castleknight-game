@@ -4,7 +4,7 @@ export declare class Tenant {
     name?: string;
     email: string;
     constructor(connection: Connection, email: string, tenantName?: string);
-    createTenant(passwd: string, extra?: object, dcList?: string): Promise<any>;
+    createTenant(passwd: string, dcList: string | string[], extra?: object): Promise<any>;
     dropTenant(): Promise<any>;
     getTenantEdgeLocations(): Promise<any>;
     tenantDetails(): Promise<any>;

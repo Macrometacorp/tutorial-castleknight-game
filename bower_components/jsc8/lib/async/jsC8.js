@@ -23,4 +23,6 @@ var tenant_1 = require("./tenant");
 exports.Tenant = tenant_1.Tenant;
 var stream_1 = require("./stream");
 exports.Stream = stream_1.Stream;
+var streamapps_1 = require("./streamapps");
+exports.Streamapps = streamapps_1.Streamapps;
 //# sourceMappingURL=jsC8.js.map

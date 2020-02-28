@@ -10,4 +10,5 @@ export { Tenant } from "./tenant";
 export { Stream } from "./stream";
 export { Fabric, c8ql };
 export { Config, BaseCollection, ArrayCursor };
+export { Streamapps } from "./streamapps";
 //# sourceMappingURL=jsC8.d.ts.map

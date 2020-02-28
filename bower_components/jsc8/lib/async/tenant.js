@@ -6,13 +6,13 @@ class Tenant {
         this.name = tenantName;
         this.email = email;
     }
-    createTenant(passwd, extra = {}, dcList = "") {
+    createTenant(passwd, dcList, extra = {}) {
         return this._connection.request({
             method: "POST",
             path: "/tenant",
             absolutePath: true,
             body: {
-                dcList,
+                dcList: Array.isArray(dcList) ? dcList.join(',') : dcList,
                 email: this.email,
                 passwd,
                 extra

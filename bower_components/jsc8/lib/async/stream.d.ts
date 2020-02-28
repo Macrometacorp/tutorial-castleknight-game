@@ -1,4 +1,4 @@
-import { Connection } from './connection';
+import { Connection } from "./connection";
 export declare enum StreamConstants {
     PERSISTENT = "persistent"
 }

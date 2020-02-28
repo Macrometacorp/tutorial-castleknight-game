@@ -25,8 +25,8 @@
   "dependencies": {},
   "devDependencies": {},
   "_source": "npm:jsc8",
-  "_target": "0.12.9",
-  "_release": "0.12.9",
-  "version": "0.12.9",
+  "_target": "0.15.0",
+  "_release": "0.15.0",
+  "version": "0.15.0",
   "_originalSource": "npm:jsc8"
 }

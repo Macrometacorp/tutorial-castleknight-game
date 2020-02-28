@@ -10,7 +10,6 @@ var StreamConstants;
 (function (StreamConstants) {
     StreamConstants["PERSISTENT"] = "persistent";
 })(StreamConstants = exports.StreamConstants || (exports.StreamConstants = {}));
-;
 class Stream {
     constructor(connection, name, local = false, isCollectionStream = false) {
         this._connection = connection;
@@ -141,7 +140,7 @@ class Stream {
             throw "Invalid DC name";
         const { onopen, onclose, onerror, onmessage } = callbackObj;
         const persist = StreamConstants.PERSISTENT;
-        const region = this.local ? 'c8local' : 'c8global';
+        const region = this.local ? "c8local" : "c8global";
         const tenant = this._connection.getTenantName();
         let dbName = this._connection.getFabricName();
         if (!dbName || !tenant)
@@ -150,23 +149,22 @@ class Stream {
         this._consumers.push(webSocket_1.ws(consumerUrl));
         const lastIndex = this._consumers.length - 1;
         const consumer = this._consumers[lastIndex];
-        consumer.on('open', () => {
-            typeof onopen === 'function' && onopen();
+        consumer.on("open", () => {
+            typeof onopen === "function" && onopen();
         });
-        consumer.on('close', () => {
+        consumer.on("close", () => {
             this.setIntervalId && clearInterval(this.setIntervalId);
-            typeof onclose === 'function' && onclose();
+            typeof onclose === "function" && onclose();
         });
-        consumer.on('error', (e) => {
-            console.log("Consumer connection errored ", e);
-            typeof onerror === 'function' && onerror(e);
+        consumer.on("error", (e) => {
+            typeof onerror === "function" && onerror(e);
         });
         consumer.on("message", (msg) => {
             const message = JSON.parse(msg);
-            const ackMsg = { "messageId": message.messageId };
+            const ackMsg = { messageId: message.messageId };
             const { payload } = message;
-            if (payload !== btoa_1.btoa('noop') && payload !== 'noop') {
-                if (typeof onmessage === 'function') {
+            if (payload !== btoa_1.btoa("noop") && payload !== "noop") {
+                if (typeof onmessage === "function") {
                     consumer.send(JSON.stringify(ackMsg));
                     onmessage(msg);
                 }
@@ -182,19 +180,19 @@ class Stream {
         if (lowerCaseUrl.includes("http") || lowerCaseUrl.includes("https"))
             throw "Invalid DC name";
         const persist = StreamConstants.PERSISTENT;
-        const region = this.local ? 'c8local' : 'c8global';
+        const region = this.local ? "c8local" : "c8global";
         const tenant = this._connection.getTenantName();
         let dbName = this._connection.getFabricName();
         if (!dbName || !tenant)
             throw "Set correct DB and/or tenant name before using.";
         const noopProducerUrl = `wss://${dcName}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.topic}`;
         this._noopProducer = webSocket_1.ws(noopProducerUrl);
-        this._noopProducer.on('open', () => {
+        this._noopProducer.on("open", () => {
             this.setIntervalId = setInterval(() => {
-                this._noopProducer.send(JSON.stringify({ payload: 'noop' }));
+                this._noopProducer.send(JSON.stringify({ payload: "noop" }));
             }, 30000);
         });
-        this._noopProducer.on('error', (e) => console.log("noop producer errored ", e));
+        this._noopProducer.on("error", (e) => console.log("noop producer errored ", e));
     }
     producer(message, dcName, callbackObj) {
         let onopen;
@@ -214,7 +212,7 @@ class Stream {
             if (lowerCaseUrl.includes("http") || lowerCaseUrl.includes("https"))
                 throw "Invalid DC name";
             const persist = StreamConstants.PERSISTENT;
-            const region = this.local ? 'c8local' : 'c8global';
+            const region = this.local ? "c8local" : "c8global";
             const tenant = this._connection.getTenantName();
             let dbName = this._connection.getFabricName();
             if (!dbName || !tenant)
@@ -222,8 +220,7 @@ class Stream {
             const producerUrl = `wss://${dcName}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.topic}`;
             this._producer = webSocket_1.ws(producerUrl);
             this._producer.on("message", (msg) => {
-                console.log('received ack: %s', msg);
-                typeof onmessage === 'function' && onmessage(msg);
+                typeof onmessage === "function" && onmessage(msg);
             });
             this._producer.on("open", () => {
                 if (!Array.isArray(message)) {
@@ -234,15 +231,13 @@ class Stream {
                         this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message[i]) }));
                     }
                 }
-                typeof onopen === 'function' && onopen();
+                typeof onopen === "function" && onopen();
             });
-            this._producer.on('close', (e) => {
-                console.log("Producer connection closed ", e);
-                typeof onclose === 'function' && onclose();
+            this._producer.on("close", () => {
+                typeof onclose === "function" && onclose();
             });
-            this._producer.on('error', (e) => {
-                console.log("Producer connection errored ", e);
-                typeof onerror === 'function' && onerror(e);
+            this._producer.on("error", (e) => {
+                typeof onerror === "function" && onerror(e);
             });
         }
         else {
@@ -265,7 +260,8 @@ class Stream {
         this.setIntervalId && clearInterval(this.setIntervalId);
         this._producer && this._producer.terminate();
         this._noopProducer && this._noopProducer.terminate();
-        this._consumers && this._consumers.forEach(consumer => consumer.terminate());
+        this._consumers &&
+            this._consumers.forEach(consumer => consumer.terminate());
     }
 }
 exports.Stream = Stream;

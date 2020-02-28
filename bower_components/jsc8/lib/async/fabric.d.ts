@@ -6,9 +6,9 @@ import { Graph } from "./graph";
 import { Tenant } from "./tenant";
 import { Stream } from "./stream";
 import { Route } from "./route";
-import { Pipeline } from './pipeline';
-import { Event } from './event';
+import { Event } from "./event";
 import User from "./user";
+import { Streamapps } from "./streamapps";
 export declare type TenantListObj = {
     tenant: string;
     active: boolean;
@@ -88,10 +88,8 @@ export declare class Fabric {
     dropFabric(fabricName: string): Promise<any>;
     login(email: string, password: string): Promise<object>;
     updateFabricSpotRegion(tenantName: string, fabricName: string, datacenter?: string): Promise<any>;
-    getPipelines(): Promise<any>;
     getEvents(): Promise<any>;
     deleteEvents(eventIds: string[]): Promise<any>;
-    pipeline(pipelineName: string): Pipeline;
     event(entityName: string, eventId?: number): Event;
     collection(collectionName: string): DocumentCollection;
     edgeCollection(collectionName: string): EdgeCollection;
@@ -130,7 +128,7 @@ export declare class Fabric {
     unsubscribe(subscription: string): Promise<any>;
     getAllEdgeLocations(): Promise<any>;
     getLocalEdgeLocation(): Promise<any>;
-    changeEdgeLocationSpotStatus(dcName: string, status: boolean): Promise<any>;
+    changeEdgeLocationSpotStatus(dcName: string, isSpot: boolean): Promise<any>;
     user(user: string, email: string): User;
     getAllUsers(): Promise<any>;
     listSavedQueries(): Promise<any>;
@@ -139,5 +137,10 @@ export declare class Fabric {
     updateSavedQuery(queryName: string, parameter: any, value: string): Promise<any>;
     deleteSavedQuery(queryName: string): Promise<any>;
     createRestqlCursor(query: string, bindVars?: any): Promise<any>;
+    streamApp(appName: string): Streamapps;
+    createStreamApp(regions: Array<string>, appDefinition: string): Promise<any>;
+    getAllStreamApps(): Promise<any>;
+    validateStreamappDefinition(appDefinition: string): Promise<any>;
+    getSampleStreamApps(): Promise<any>;
 }
 //# sourceMappingURL=fabric.d.ts.map
