@@ -8,6 +8,6 @@
   "license": "MIT",
   "dependencies": {
     "phaser": "^2.6.2",
-    "jsc8": "npm:jsc8#0.15.1"
+    "jsc8": "npm:jsc8#0.15.2"
   }
 }

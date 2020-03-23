@@ -1,7 +1,16 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const helper_1 = require("./util/helper");
 const btoa_1 = require("./util/btoa");
+const query_string_1 = require("query-string");
 // 2 document
 // 3 edge
 // 4 persistent
@@ -16,7 +25,8 @@ class Stream {
         this.isCollectionStream = isCollectionStream;
         this.local = local;
         this._consumers = [];
-        this.setIntervalId = undefined;
+        this._setIntervalId = undefined;
+        this._producerIntervalId = undefined;
         this.name = name;
         let topic = this.name;
         if (!this.isCollectionStream) {
@@ -134,7 +144,7 @@ class Stream {
             qs: `local=${this.local}`
         }, res => res.body);
     }
-    consumer(subscriptionName, callbackObj, dcName) {
+    consumer(subscriptionName, callbackObj, dcName, params = {}) {
         const lowerCaseUrl = dcName.toLocaleLowerCase();
         if (lowerCaseUrl.includes("http") || lowerCaseUrl.includes("https"))
             throw "Invalid DC name";
@@ -143,9 +153,10 @@ class Stream {
         const region = this.local ? "c8local" : "c8global";
         const tenant = this._connection.getTenantName();
         let dbName = this._connection.getFabricName();
+        let queryParams = query_string_1.stringify(params);
         if (!dbName || !tenant)
             throw "Set correct DB and/or tenant name before using.";
-        const consumerUrl = `wss://${dcName}/_ws/ws/v2/consumer/${persist}/${tenant}/${region}.${dbName}/${this.topic}/${subscriptionName}`;
+        const consumerUrl = `wss://${dcName}/_ws/ws/v2/consumer/${persist}/${tenant}/${region}.${dbName}/${this.topic}/${subscriptionName}?${queryParams}`;
         this._consumers.push(webSocket_1.ws(consumerUrl));
         const lastIndex = this._consumers.length - 1;
         const consumer = this._consumers[lastIndex];
@@ -153,27 +164,30 @@ class Stream {
             typeof onopen === "function" && onopen();
         });
         consumer.on("close", () => {
-            this.setIntervalId && clearInterval(this.setIntervalId);
+            this._setIntervalId && clearInterval(this._setIntervalId);
             typeof onclose === "function" && onclose();
         });
         consumer.on("error", (e) => {
             typeof onerror === "function" && onerror(e);
         });
-        consumer.on("message", (msg) => {
+        consumer.on("message", (msg) => __awaiter(this, void 0, void 0, function* () {
             const message = JSON.parse(msg);
             const ackMsg = { messageId: message.messageId };
             const { payload } = message;
             if (payload !== btoa_1.btoa("noop") && payload !== "noop") {
                 if (typeof onmessage === "function") {
-                    consumer.send(JSON.stringify(ackMsg));
-                    onmessage(msg);
+                    const shouldAck = yield onmessage(msg);
+                    if (shouldAck !== false) {
+                        consumer.send(JSON.stringify(ackMsg));
+                    }
                 }
             }
             else {
                 consumer.send(JSON.stringify(ackMsg));
             }
-        });
+        }));
         !this._noopProducer && this.noopProducer(dcName);
+        return consumer;
     }
     noopProducer(dcName) {
         const lowerCaseUrl = dcName.toLocaleLowerCase();
@@ -188,7 +202,7 @@ class Stream {
         const noopProducerUrl = `wss://${dcName}/_ws/ws/v2/producer/${persist}/${tenant}/${region}.${dbName}/${this.topic}`;
         this._noopProducer = webSocket_1.ws(noopProducerUrl);
         this._noopProducer.on("open", () => {
-            this.setIntervalId = setInterval(() => {
+            this._setIntervalId = setInterval(() => {
                 this._noopProducer.send(JSON.stringify({ payload: "noop" }));
             }, 30000);
         });
@@ -223,6 +237,9 @@ class Stream {
                 typeof onmessage === "function" && onmessage(msg);
             });
             this._producer.on("open", () => {
+                this._producerIntervalId = setInterval(() => {
+                    this._producer.send(JSON.stringify({ payload: "noop" }));
+                }, 30000);
                 if (!Array.isArray(message)) {
                     this._producer.send(JSON.stringify({ payload: btoa_1.btoa(message) }));
                 }
@@ -234,6 +251,7 @@ class Stream {
                 typeof onopen === "function" && onopen();
             });
             this._producer.on("close", () => {
+                clearInterval(this._producerIntervalId);
                 typeof onclose === "function" && onclose();
             });
             this._producer.on("error", (e) => {
@@ -257,7 +275,8 @@ class Stream {
         }
     }
     closeConnections() {
-        this.setIntervalId && clearInterval(this.setIntervalId);
+        this._setIntervalId && clearInterval(this._setIntervalId);
+        this._producerIntervalId && clearInterval(this._producerIntervalId);
         this._producer && this._producer.terminate();
         this._noopProducer && this._noopProducer.terminate();
         this._consumers &&

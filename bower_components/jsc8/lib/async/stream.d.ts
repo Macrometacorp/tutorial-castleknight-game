@@ -6,7 +6,7 @@ export declare type wsCallbackObj = {
     onopen?: () => void;
     onclose?: () => void;
     onerror?: (e: Error) => void;
-    onmessage: (msg: string) => void;
+    onmessage: (msg: string) => Promise<boolean> | boolean | void;
 };
 export declare class Stream {
     private _connection;
@@ -17,7 +17,8 @@ export declare class Stream {
     private _producer;
     private _noopProducer;
     private _consumers;
-    private setIntervalId?;
+    private _setIntervalId?;
+    private _producerIntervalId?;
     constructor(connection: Connection, name: string, local?: boolean, isCollectionStream?: boolean);
     _getPath(useName: boolean, urlSuffix?: string): string;
     createStream(): Promise<any>;
@@ -33,7 +34,9 @@ export declare class Stream {
     skipAllMessages(subscription: string): Promise<any>;
     getSubscriptionList(): Promise<any>;
     terminateStream(): Promise<any>;
-    consumer(subscriptionName: string, callbackObj: wsCallbackObj, dcName: string): void;
+    consumer(subscriptionName: string, callbackObj: wsCallbackObj, dcName: string, params?: {
+        [key: string]: any;
+    }): any;
     private noopProducer;
     producer(message: string | Array<string>, dcName?: string, callbackObj?: wsCallbackObj): void;
     closeConnections(): void;

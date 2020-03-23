@@ -33,12 +33,12 @@ class Streamapps {
             path: `/_api/streamapps/${this.name}/active?active=${active}`,
         }, res => res.body);
     }
-    query(appName, query) {
+    query(query) {
         return this._connection.request({
             method: "POST",
-            path: `/_api/streamapps/query/${appName}`,
+            path: `/_api/streamapps/query/${this.name}`,
             body: {
-                "query": query,
+                "query": query
             }
         }, res => res.body);
     }

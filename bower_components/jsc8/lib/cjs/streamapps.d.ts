@@ -7,6 +7,6 @@ export declare class Streamapps {
     updateApplication(regions: Array<string>, appDefinition: string): Promise<any>;
     deleteApplication(): Promise<any>;
     activateStreamApplication(active: boolean): Promise<any>;
-    query(appName: string, query: string): Promise<any>;
+    query(query: string): Promise<any>;
 }
 //# sourceMappingURL=streamapps.d.ts.map
