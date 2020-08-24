@@ -18,6 +18,9 @@ export declare type RequestOptions = {
 };
 export declare type Config = string | string[] | Partial<{
     url: string | string[];
+    fabricName: string;
+    apiKey: string;
+    token: string;
     isAbsolute: boolean;
     c8Version: number;
     loadBalancingStrategy: LoadBalancingStrategy;
@@ -62,6 +65,7 @@ export declare class Connection {
     setTenantName(tenantName: string): void;
     setHeader(key: string, value: string): void;
     close(): void;
+    extractTenantName(apiKey: string): string;
     request<T = C8jsResponse>({ host, method, body, expectBinary, isBinary, headers, ...urlInfo }: RequestOptions, getter?: (res: C8jsResponse) => T): Promise<T>;
 }
 //# sourceMappingURL=connection.d.ts.map

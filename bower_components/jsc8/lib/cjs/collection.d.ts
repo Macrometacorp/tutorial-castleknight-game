@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { Connection } from "./connection";
-import { Stream, wsCallbackObj } from "./stream";
+import { Stream } from "./stream";
 export declare enum CollectionType {
     DOCUMENT_COLLECTION = 2,
     EDGE_COLLECTION = 3
@@ -8,6 +8,11 @@ export declare enum CollectionType {
 export declare type DocumentHandle = string | {
     _key?: string;
     _id?: string;
+};
+export declare type DocumentsHandle = {
+    _key: string;
+    _id?: string | undefined;
+    [key: string]: any;
 };
 export declare type IndexHandle = string | {
     id?: string;
@@ -54,8 +59,7 @@ export declare abstract class BaseCollection implements C8Collection {
     get(): Promise<any>;
     exists(): Promise<boolean>;
     create(properties?: any): Promise<any>;
-    onChange(callback: wsCallbackObj, dcName: string, subscriptionName?: string): void;
-    closeOnChangeConnection(): void;
+    onChange(dcName: string, subscriptionName?: string): Promise<any>;
     properties(): Promise<any>;
     count(): Promise<any>;
     rename(name: string): Promise<any>;
@@ -64,19 +68,23 @@ export declare abstract class BaseCollection implements C8Collection {
     documentExists(documentHandle: DocumentHandle): Promise<boolean>;
     document(documentHandle: DocumentHandle, graceful?: boolean): Promise<any>;
     replace(documentHandle: DocumentHandle, newValue: any, opts?: any): Promise<any>;
+    replaceDocuments(documents: DocumentsHandle[], opts?: any): Promise<any>;
     update(documentHandle: DocumentHandle, newValue: any, opts?: any): Promise<any>;
+    updateDocuments(documents: DocumentsHandle[], opts?: any): Promise<any>;
     remove(documentHandle: DocumentHandle, opts?: any): Promise<any>;
+    removeDocuments(documents: string[] | DocumentsHandle[], opts?: any): Promise<any>;
     import(data: Buffer | Blob | string | any[], { type, ...opts }?: ImportOptions): Promise<ImportResult>;
     indexes(): Promise<any>;
-    index(indexHandle: IndexHandle): Promise<any>;
+    index(indexName: string): Promise<any>;
     createIndex(details: any): Promise<any>;
-    dropIndex(indexHandle: IndexHandle): Promise<any>;
+    dropIndex(indexName: string): Promise<any>;
     createCapConstraint(opts?: any): Promise<any>;
     createHashIndex(fields: string[] | string, opts?: any): Promise<any>;
     createSkipList(fields: string[] | string, opts?: any): Promise<any>;
     createPersistentIndex(fields: string[] | string, opts?: any): Promise<any>;
     createGeoIndex(fields: string[] | string, opts?: any): Promise<any>;
     createFulltextIndex(fields: string[] | string, minLength?: number): Promise<any>;
+    createTtlIndex(fields: string[] | string, expireAfter: number): Promise<any>;
 }
 export interface DocumentSaveOptions {
     waitForSync?: boolean;
