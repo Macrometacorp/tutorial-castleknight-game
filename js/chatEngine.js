@@ -142,13 +142,8 @@ window.initChatEngine = async function () {
     </div>
     `;
 
-  const producerChat = await window.fabric.createStreamProducer(
-    chatStreamTopic,
-    false
-  );
-
   const consumerChat = await window.fabric.createStreamReader(
-    chatStreamTopic,
+    CHAT_STREAM_NAME,
     window.UniqueID,
     false
   );
@@ -166,14 +161,18 @@ window.initChatEngine = async function () {
   });
 
   consumerChat.on("message", (message) => {
-    message = JSON.parse(message.data);
+    message = JSON.parse(message);
+    const data = JSON.parse(atob(message.payload));
 
+    message = { ...message, ...data };
+
+    const ackMsg = { messageId: message.messageId };
+    consumerChat.send(JSON.stringify(ackMsg));
     if (
       message.payload !== "noop" &&
       message.properties &&
       message.properties.text
     ) {
-      console.log("payload", message.payload);
       var uuid = message.properties.uuid;
       var text = message.properties.text;
 
@@ -195,15 +194,9 @@ window.initChatEngine = async function () {
     }
   });
 
-  producerChat.on("close", (event) => {
-    console.log("chat producer closed");
-  });
-  producerChat.on("open", () => {
-    console.log("chat producer opened");
-  });
-
   setInterval(() => {
-    if (producerChat) producerChat.send(JSON.stringify({ payload: "noop" }));
+    if (window.chatStream)
+      window.chatStream.publishMessage(JSON.stringify({ payload: "noop" }));
   }, 30000);
 
   function sendMessage(e) {
@@ -227,7 +220,7 @@ window.initChatEngine = async function () {
         properties: obj,
       });
 
-      producerChat.send(jsonString);
+      window.chatStream.publishMessage(jsonString);
 
       chatInput.value = "";
     }

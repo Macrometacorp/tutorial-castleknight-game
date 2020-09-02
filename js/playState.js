@@ -160,7 +160,6 @@ window.PlayState = {
   },
 
   create() {
-    debugger;
     window.globalGameState = this;
     // fade in  (from black)
     this.camera.flash("#000000");

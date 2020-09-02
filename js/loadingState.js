@@ -41,7 +41,6 @@ window.LoadingState = {
   },
 
   create() {
-    debugger;
     this.game.state.start("play", true, false, {
       level: window.globalCurrentLevel,
     }); // Start Game

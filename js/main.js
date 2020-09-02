@@ -17,7 +17,7 @@ let allOccupancyObj = [0, 0, 0];
 window.updateOccupancyCounter = false; // Occupancy Counter variable to check if the timer has already been called in that scene
 window.keyMessages = [];
 
-window.macrometaProducer = null;
+window.macrometaStream = null;
 window.macrometaConsumer = null;
 
 window.PRESENCE_ACTION_JOIN = "join";
@@ -30,7 +30,7 @@ const TYPE_PRESENCE = 2;
 const DB_NAME = (window.DB_NAME = fabric_name);
 const BASE_URL = (window.BASE_URL = cluster);
 
-const CHAT_STREAM_NAME = "streamChat";
+window.CHAT_STREAM_NAME = "stream-chat";
 
 let topic;
 
@@ -54,9 +54,9 @@ async function collection() {
   try {
     await chatStream.createStream();
   } catch {
-    console.log("stream is being AFK");
+    console.log(`stream ${CHAT_STREAM_NAME} already exist`);
   }
-  window.chatStreamTopic = chatStream.topic;
+  window.chatStream = chatStream;
 }
 
 async function init(currentLevel = 0) {
@@ -68,16 +68,28 @@ async function init(currentLevel = 0) {
   window.currentChannelName = `realtimephaser${currentLevel}`; // Create the channel name + the current level. This way each level is on its own channel.
 
   // create streams
-  const streamName = `streamLevel${currentLevel}`;
+  const streamName = `stream-level-${currentLevel}`;
   const stream = fabric.stream(streamName, false);
   try {
     await stream.createStream();
   } catch {
-    console.log("do-nothing");
+    console.log(`stream ${streamName} already exist`);
   }
   topic = stream.topic;
 
-  const producerWs = await fabric.createStreamProducer(streamName, false);
+  const prodMsg = JSON.stringify({
+    payload: "realData",
+    properties: {
+      channel: "realtimephaserFire2",
+      level: currentLevel,
+      macrometaType: TYPE_MESSAGE,
+      int: true,
+      sendToRightPlayer: window.UniqueID,
+      timeToken: Date.now(),
+    },
+  });
+  window.macrometaStream = stream;
+
   const consumerWs = await fabric.createStreamReader(
     streamName,
     window.UniqueID,
@@ -86,9 +98,9 @@ async function init(currentLevel = 0) {
 
   // Streams
   var consumer = (window.macrometaConsumer = consumerWs);
-
   consumer.on("open", () => {
     console.log("WebSocket consumer is open");
+    stream.publishMessage(prodMsg);
   });
 
   consumer.on("error", () => {
@@ -100,10 +112,14 @@ async function init(currentLevel = 0) {
   });
 
   consumer.on("message", (message) => {
-    const receiveMsg = JSON.parse(message.data);
-    const ackMsg = { messageId: receiveMsg.messageId };
+    message = JSON.parse(message);
+
+    const data = JSON.parse(atob(message.payload));
+    message = { ...message, ...data };
+
+    const ackMsg = { messageId: message.messageId };
     consumer.send(JSON.stringify(ackMsg));
-    message = JSON.parse(message.data);
+
     message.properties.position = {
       x: message.properties.x,
       y: message.properties.y,
@@ -120,7 +136,7 @@ async function init(currentLevel = 0) {
         }
         window.globalLastTime = messageEvent.timetoken; // Set the timestamp for when you send fire messages to the block
         if (
-          messageEvent.message.int == "true" &&
+          messageEvent.message.int == true &&
           messageEvent.message.sendToRightPlayer === window.UniqueID
         ) {
           // If you get a message and it matches with your UUID
@@ -194,43 +210,16 @@ async function init(currentLevel = 0) {
       } // --- end presence
     }
   });
-
-  //producer
-
-  const prodMsg = JSON.stringify({
-    payload: "realData",
-    properties: {
-      channel: "realtimephaserFire2",
-      level: currentLevel,
-      macrometaType: TYPE_MESSAGE,
-      int: true,
-      sendToRightPlayer: window.UniqueID,
-      timeToken: Date.now(),
-    },
-  });
-  var producer = (window.macrometaProducer = producerWs);
-  producer.on("close", (event) => {
-    console.log("Document producer closed", event);
-  });
-  producer.on(
-    ("open",
-    () => {
-      console.log("producer open");
-
-      console.log(
-        "attemptSendAnIntMessage, which when received by consumers, starts loading"
-      );
-      window.macrometaProducer.send(prodMsg);
-    })
-  );
 }
 
 /// Start for initialization only called once
-function start() {
-  //publish gibberish data every 5000ms to whatever producer is the curent one
+async function start() {
+  //publish gibberish data every 5000ms to whatever producer is the current one
   setInterval(() => {
-    if (window.macrometaProducer)
-      window.macrometaProducer.send(JSON.stringify({ payload: "noop" }));
+    if (window.macrometaStream)
+      window.macrometaStream.publishMessage(
+        JSON.stringify({ payload: "noop" })
+      );
   }, 30000);
 
   setInterval(() => {
@@ -248,10 +237,9 @@ function start() {
       payload: "realDataPresence",
       properties: obj,
     });
-    window.macrometaProducer.send(jsonString);
+    window.macrometaStream.publishMessage(jsonString);
     console.log("I unsubscribed and sent something");
-    window.macrometaConsumer.close();
-    window.macrometaProducer.close();
+    window.macrometaConsumer.terminate();
   };
 
   // If person leaves or refreshes the window, run the unsubscribe function
@@ -262,8 +250,10 @@ function start() {
     return null;
   });
 }
+
 const QUERY_READ = "FOR doc IN occupancy RETURN doc";
-const QUERY_UPDATE = "UPDATE"; //`FOR doc IN occupancy REPLACE doc WITH ${JSON.stringify(allOccupancyObj)} IN occupancy`;
+const QUERY_UPDATE = "UPDATE";
+//`FOR doc IN occupancy REPLACE doc WITH ${JSON.stringify(allOccupancyObj)} IN occupancy`;
 async function makeOccupancyQuery(queryToMake, shouldAdd = true) {
   if (queryToMake === QUERY_UPDATE) {
     let levelWord = "one";
@@ -304,7 +294,6 @@ function updateOccupancyText() {
   window.text1 = `Level 1 Occupancy: ${allOccupancyObj[0]}`;
   window.text2 = `Level 2 Occupancy: ${allOccupancyObj[1]}`;
   window.text3 = `Level 3 Occupancy: ${allOccupancyObj[2]}`;
-  console.log(window.textObject1);
   window.textObject1.setText(window.text1);
   window.textObject2.setText(window.text2);
   window.textObject3.setText(window.text3);
@@ -328,7 +317,7 @@ window.sendKeyMessage = (keyMessage) => {
       keyMessage.frameCounter = window.frameCounter;
       keyMessage.timeToken = Date.now();
 
-      window.macrometaProducer.send(
+      window.macrometaStream.publishMessage(
         JSON.stringify({
           payload: "rD",
           properties: keyMessage,
@@ -364,8 +353,6 @@ window.addEventListener("load", async () => {
   game.state.disableVisibilityChange = true; // This allows two windows to be open at the same time and allow both windows to run the update function
   game.state.add("play", window.PlayState);
   game.state.add("loading", window.LoadingState);
-  init();
-  start();
 
   window.StartLoading = function () {
     var obj = {
@@ -378,8 +365,11 @@ window.addEventListener("load", async () => {
       properties: obj,
     });
     console.log("attempt start loading");
-    window.macrometaProducer.send(jsonString);
+    window.macrometaStream.publishMessage(jsonString);
     game.state.start("loading"); // Run the loading function once you successfully connect to the network
     window.initChatEngine();
   };
+
+  await init();
+  await start();
 });
