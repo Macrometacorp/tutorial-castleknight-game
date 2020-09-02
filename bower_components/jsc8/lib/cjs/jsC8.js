@@ -9,11 +9,13 @@ exports.Fabric = fabric_1.Fabric;
 const error_1 = require("./error");
 const cursor_1 = require("./cursor");
 exports.ArrayCursor = cursor_1.ArrayCursor;
+const client_1 = require("./client");
+exports.C8Client = client_1.C8Client;
 function jsC8(config) {
-    return new fabric_1.Fabric(config);
+    return new client_1.C8Client(config);
 }
 exports.default = jsC8;
-Object.assign(jsC8, { CollectionType: collection_1.CollectionType, C8Error: error_1.C8Error, Fabric: fabric_1.Fabric, c8ql: c8ql_query_1.c8ql });
+Object.assign(jsC8, { CollectionType: collection_1.CollectionType, C8Error: error_1.C8Error, Fabric: fabric_1.Fabric, c8ql: c8ql_query_1.c8ql, C8Client: client_1.C8Client });
 var collection_2 = require("./collection");
 exports.DocumentCollection = collection_2.DocumentCollection;
 exports.EdgeCollection = collection_2.EdgeCollection;

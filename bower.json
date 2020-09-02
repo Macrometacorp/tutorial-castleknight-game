@@ -1,13 +1,11 @@
 {
   "name": "ninja-multiplayer-platformer",
-  "authors": [
-    "C8"
-  ],
+  "authors": ["C8"],
   "description": "",
   "main": "",
   "license": "MIT",
   "dependencies": {
     "phaser": "^2.6.2",
-    "jsc8": "npm:jsc8#0.15.2"
+    "jsc8": "npm:jsc8#0.16.2"
   }
 }

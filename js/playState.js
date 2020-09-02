@@ -30,7 +30,7 @@ function logCurrentStateCoin(game, coin) {
 function handleKeyMessages() {
   const earlyMessages = [];
   const lateMessages = [];
-  window.keyMessages.forEach(messageEvent => {
+  window.keyMessages.forEach((messageEvent) => {
     if (window.globalOtherHeros) {
       // If player exists
       if (true /*messageEvent.channel === window.currentChannelName*/) {
@@ -142,7 +142,7 @@ function handleKeyMessages() {
     //console.log({ lateMessages, earlyMessages });
   }
   window.keyMessages.length = 0;
-  earlyMessages.forEach(em => {
+  earlyMessages.forEach((em) => {
     window.keyMessages.push(em);
   });
 }
@@ -152,7 +152,7 @@ window.PlayState = {
     this.keys = this.game.input.keyboard.addKeys({
       left: window.Phaser.KeyCode.LEFT,
       right: window.Phaser.KeyCode.RIGHT,
-      up: window.Phaser.KeyCode.UP
+      up: window.Phaser.KeyCode.UP,
     });
     this.coinPickupCount = 0;
     keyCollected = false;
@@ -169,30 +169,30 @@ window.PlayState = {
       coin: this.game.add.audio("sfx:coin"),
       key: this.game.add.audio("sfx:key"),
       stomp: this.game.add.audio("sfx:stomp"),
-      door: this.game.add.audio("sfx:door")
+      door: this.game.add.audio("sfx:door"),
     };
     // create level entities and decoration
     this.game.add.image(0, 0, "background");
     window.textObject1 = this.game.add.text(700, 5, window.text1, {
       font: "Bold 200px Arial",
       fill: "#000000",
-      fontSize: "20px"
+      fontSize: "20px",
     });
     window.textObject2 = this.game.add.text(700, 35, window.text2, {
       font: "Bold 200px Arial",
       fill: "#000000",
-      fontSize: "20px"
+      fontSize: "20px",
     });
     window.textObject3 = this.game.add.text(700, 65, window.text3, {
       font: "Bold 200px Arial",
       fill: "#000000",
-      fontSize: "20px"
+      fontSize: "20px",
     });
     // console.log(window.text);
     if (window.globalLevelState === null) {
       window.globalLevelState = {
         time: 0,
-        coinCache: this.game.cache.getJSON(`level:${this.level}`)
+        coinCache: this.game.cache.getJSON(`level:${this.level}`),
       };
     }
     this._loadLevel(window.globalLevelState.coinCache);
@@ -478,7 +478,7 @@ window.PlayState = {
 
   _goToNextLevel() {
     this.camera.fade("#000000");
-    this.camera.onFadeComplete.addOnce(function() {
+    this.camera.onFadeComplete.addOnce(function () {
       window.globalUnsubscribe();
       window.updateOccupancyCounter = false;
       if (this.level === 2) {
@@ -500,7 +500,7 @@ window.PlayState = {
     this._spawnCharacters({ hero: data.hero, spiders: data.spiders });
 
     // spawn level decoration
-    data.decoration.forEach(function(deco) {
+    data.decoration.forEach(function (deco) {
       this.bgDecoration.add(
         this.game.add.image(deco.x, deco.y, "decoration", deco.frame)
       );
@@ -640,5 +640,5 @@ window.PlayState = {
     this.hud.add(coinScoreImg);
     this.hud.add(this.keyIcon);
     this.hud.position.set(10, 10);
-  }
+  },
 };

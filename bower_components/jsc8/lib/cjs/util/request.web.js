@@ -13,12 +13,12 @@ function omit(obj, keys) {
     }
     return result;
 }
-function createRequest(baseUrl, agentOptions) {
+function createRequest(baseUrl, agentOptions, fetch) {
     const baseUrlParts = url_1.parse(baseUrl);
     const options = omit(agentOptions, [
         "keepAlive",
         "keepAliveMsecs",
-        "maxSockets"
+        "maxSockets",
     ]);
     return function request({ method, url, headers, body, expectBinary }, cb) {
         const urlParts = Object.assign({}, baseUrlParts, { pathname: url.pathname
@@ -34,20 +34,38 @@ function createRequest(baseUrl, agentOptions) {
             callback = () => undefined;
             cb(err, res);
         };
-        const req = xhr_1.default(Object.assign({ responseType: expectBinary ? "blob" : "text" }, options, { url: url_1.format(urlParts), useXDR: true, body,
-            method,
-            headers }), (err, res) => {
-            if (!err) {
-                if (!res.body)
-                    res.body = "";
-                callback(null, res);
-            }
-            else {
-                const error = err;
-                error.request = req;
-                callback(error);
-            }
-        });
+        if (fetch) {
+            fetch(url_1.format(urlParts), Object.assign({}, options, { body,
+                method,
+                headers }))
+                .then(function (response) {
+                return response.json();
+            })
+                .then((res) => {
+                if (res.error) {
+                    callback(res);
+                }
+                else {
+                    callback(null, res);
+                }
+            });
+        }
+        else {
+            const req = xhr_1.default(Object.assign({ responseType: expectBinary ? "blob" : "text" }, options, { url: url_1.format(urlParts), useXDR: true, body,
+                method,
+                headers }), (err, res) => {
+                if (!err) {
+                    if (!res.body)
+                        res.body = "";
+                    callback(null, res);
+                }
+                else {
+                    const error = err;
+                    error.request = req;
+                    callback(error);
+                }
+            });
+        }
     };
 }
 exports.createRequest = createRequest;

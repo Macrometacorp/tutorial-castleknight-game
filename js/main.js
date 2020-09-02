@@ -17,7 +17,7 @@ let allOccupancyObj = [0, 0, 0];
 window.updateOccupancyCounter = false; // Occupancy Counter variable to check if the timer has already been called in that scene
 window.keyMessages = [];
 
-window.macrometaProducer = null;
+window.macrometaStream = null;
 window.macrometaConsumer = null;
 
 window.PRESENCE_ACTION_JOIN = "join";
@@ -30,14 +30,14 @@ const TYPE_PRESENCE = 2;
 const DB_NAME = (window.DB_NAME = fabric_name);
 const BASE_URL = (window.BASE_URL = cluster);
 
-const CHAT_STREAM_NAME = "stream-chat";
+window.CHAT_STREAM_NAME = "stream-chat";
 
 let topic;
 
-const fabric = window.jsC8(`https://${BASE_URL}`);
-
+var fabric = new window.jsC8(`https://${BASE_URL}`);
 async function collection() {
   const res = await fabric.login(email, password);
+  window.fabric = fabric;
   window.TENANT = res.tenant;
   fabric.useFabric(fabric_name);
   const collection = fabric.collection("occupancy");
@@ -51,8 +51,12 @@ async function collection() {
 
   // create chat stream
   const chatStream = fabric.stream(CHAT_STREAM_NAME, false);
-  await chatStream.createStream();
-  window.chatStreamTopic = chatStream.topic;
+  try {
+    await chatStream.createStream();
+  } catch {
+    console.log(`stream ${CHAT_STREAM_NAME} already exist`);
+  }
+  window.chatStream = chatStream;
 }
 
 async function init(currentLevel = 0) {
@@ -66,40 +70,66 @@ async function init(currentLevel = 0) {
   // create streams
   const streamName = `stream-level-${currentLevel}`;
   const stream = fabric.stream(streamName, false);
-  await stream.createStream();
+  try {
+    await stream.createStream();
+  } catch {
+    console.log(`stream ${streamName} already exist`);
+  }
   topic = stream.topic;
 
-  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
+  const prodMsg = JSON.stringify({
+    payload: "realData",
+    properties: {
+      channel: "realtimephaserFire2",
+      level: currentLevel,
+      macrometaType: TYPE_MESSAGE,
+      int: true,
+      sendToRightPlayer: window.UniqueID,
+      timeToken: Date.now(),
+    },
+  });
+  window.macrometaStream = stream;
 
-  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
+  const consumerWs = await fabric.createStreamReader(
+    streamName,
+    window.UniqueID,
+    false,
+    false,
+    BASE_URL
+  );
+
   // Streams
-  var consumer = (window.macrometaConsumer = new WebSocket(consumerURL));
-
-  consumer.onopen = () => {
+  var consumer = (window.macrometaConsumer = consumerWs);
+  consumer.on("open", () => {
     console.log("WebSocket consumer is open");
-  };
+    stream.publishMessage(prodMsg);
+  });
 
-  consumer.onerror = () => {
+  consumer.on("error", () => {
     console.log("Failed to establish WS connection for level");
-  };
+  });
 
-  consumer.onclose = event => {
+  consumer.on("close", (event) => {
     console.log("Closing WS connection for level");
-  };
+  });
 
-  consumer.onmessage = message => {
-    const receiveMsg = JSON.parse(message.data);
-    const ackMsg = { messageId: receiveMsg.messageId };
+  consumer.on("message", (message) => {
+    message = JSON.parse(message);
+
+    const data = JSON.parse(atob(message.payload));
+    message = { ...message, ...data };
+
+    const ackMsg = { messageId: message.messageId };
     consumer.send(JSON.stringify(ackMsg));
-    message = JSON.parse(message.data);
+
     message.properties.position = {
       x: message.properties.x,
-      y: message.properties.y
+      y: message.properties.y,
     };
     var messageEvent = {
       message: message.properties,
       sendByPost: false, // true to send via posts
-      timeToken: message.properties.timeToken || 0
+      timeToken: message.properties.timeToken || 0,
     };
     if (message.payload !== "noop") {
       if (messageEvent.message.macrometaType == TYPE_MESSAGE) {
@@ -108,7 +138,7 @@ async function init(currentLevel = 0) {
         }
         window.globalLastTime = messageEvent.timetoken; // Set the timestamp for when you send fire messages to the block
         if (
-          messageEvent.message.int == "true" &&
+          messageEvent.message.int == true &&
           messageEvent.message.sendToRightPlayer === window.UniqueID
         ) {
           // If you get a message and it matches with your UUID
@@ -181,74 +211,51 @@ async function init(currentLevel = 0) {
         }
       } // --- end presence
     }
-  };
-
-  //producer
-
-  const prodMsg = JSON.stringify({
-    payload: "realData",
-    properties: {
-      channel: "realtimephaserFire2",
-      level: currentLevel,
-      macrometaType: TYPE_MESSAGE,
-      int: true,
-      sendToRightPlayer: window.UniqueID,
-      timeToken: Date.now()
-    }
   });
-  var producer = (window.macrometaProducer = new WebSocket(producerURL));
-  producer.onclose = event => {
-    console.log("Document producer closed", event);
-  };
-  producer.onopen = () => {
-    console.log("producer open");
-
-    console.log(
-      "attemptSendAnIntMessage, which when received by consumers, starts loading"
-    );
-    window.macrometaProducer.send(prodMsg);
-  };
 }
 
 /// Start for initialization only called once
-function start() {
-  //publish gibberish data every 5000ms to whatever producer is the curent one
+async function start() {
+  //publish gibberish data every 5000ms to whatever producer is the current one
   setInterval(() => {
-    if (window.macrometaProducer)
-      window.macrometaProducer.send(JSON.stringify({ payload: "noop" }));
+    if (window.macrometaStream)
+      window.macrometaStream.publishMessage(
+        JSON.stringify({ payload: "noop" })
+      );
   }, 30000);
 
   setInterval(() => {
     makeOccupancyQuery(QUERY_READ);
   }, 1000);
 
-  window.globalUnsubscribe = function() {
+  window.globalUnsubscribe = function () {
     makeOccupancyQuery(QUERY_UPDATE, false);
     var obj = {
       uuid: window.UniqueID,
       action: window.PRESENCE_ACTION_LEAVE,
-      macrometaType: TYPE_PRESENCE
+      macrometaType: TYPE_PRESENCE,
     };
     var jsonString = JSON.stringify({
       payload: "realDataPresence",
-      properties: obj
+      properties: obj,
     });
-    window.macrometaProducer.send(jsonString);
+    window.macrometaStream.publishMessage(jsonString);
     console.log("I unsubscribed and sent something");
-    window.macrometaConsumer.close();
-    window.macrometaProducer.close();
+    window.macrometaConsumer.terminate();
   };
 
   // If person leaves or refreshes the window, run the unsubscribe function
-  window.addEventListener("beforeunload", event => {
+  window.addEventListener("beforeunload", (event) => {
     console.log("interfere with close tab");
     window.globalUnsubscribe();
 
     return null;
   });
 }
+
 const QUERY_READ = "FOR doc IN occupancy RETURN doc";
-const QUERY_UPDATE = "UPDATE"; //`FOR doc IN occupancy REPLACE doc WITH ${JSON.stringify(allOccupancyObj)} IN occupancy`;
+const QUERY_UPDATE = "UPDATE";
+//`FOR doc IN occupancy REPLACE doc WITH ${JSON.stringify(allOccupancyObj)} IN occupancy`;
 async function makeOccupancyQuery(queryToMake, shouldAdd = true) {
   if (queryToMake === QUERY_UPDATE) {
     let levelWord = "one";
@@ -298,11 +305,11 @@ function getLevelState(currentLevel) {
   return game.cache.getJSON(`level:${currentLevel}`);
 }
 
-window.createMyConnection = function(currentLevel) {
+window.createMyConnection = function (currentLevel) {
   init(currentLevel);
 };
 
-window.sendKeyMessage = keyMessage => {
+window.sendKeyMessage = (keyMessage) => {
   try {
     if (window.globalMyHero) {
       keyMessage.uuid = window.UniqueID;
@@ -312,10 +319,10 @@ window.sendKeyMessage = keyMessage => {
       keyMessage.frameCounter = window.frameCounter;
       keyMessage.timeToken = Date.now();
 
-      window.macrometaProducer.send(
+      window.macrometaStream.publishMessage(
         JSON.stringify({
           payload: "rD",
-          properties: keyMessage
+          properties: keyMessage,
         })
       );
     }
@@ -343,27 +350,28 @@ document.head.appendChild(loadPlaystate);
 // Load the various phaser states and start game
 // =============================================================================
 var game;
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
   game = new window.Phaser.Game(960, 600, window.Phaser.AUTO, "game");
   game.state.disableVisibilityChange = true; // This allows two windows to be open at the same time and allow both windows to run the update function
   game.state.add("play", window.PlayState);
   game.state.add("loading", window.LoadingState);
-  init();
-  start();
 
-  window.StartLoading = function() {
+  window.StartLoading = function () {
     var obj = {
       uuid: window.UniqueID,
       action: window.PRESENCE_ACTION_JOIN,
-      macrometaType: TYPE_PRESENCE
+      macrometaType: TYPE_PRESENCE,
     };
     var jsonString = JSON.stringify({
       payload: "realDataPresence",
-      properties: obj
+      properties: obj,
     });
     console.log("attempt start loading");
-    window.macrometaProducer.send(jsonString);
+    window.macrometaStream.publishMessage(jsonString);
     game.state.start("loading"); // Run the loading function once you successfully connect to the network
     window.initChatEngine();
   };
+
+  await init();
+  await start();
 });

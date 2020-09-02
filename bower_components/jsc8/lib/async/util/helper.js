@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const stream_1 = require("../stream");
 function getFullStreamPath(topic, extraUrl) {
-    const baseUrl = `/streams/${stream_1.StreamConstants.PERSISTENT}/stream/${topic}`;
+    const baseUrl = `/streams/${topic}`;
     const path = extraUrl ? `${baseUrl}${extraUrl}` : baseUrl;
     return path;
 }
