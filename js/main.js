@@ -93,7 +93,9 @@ async function init(currentLevel = 0) {
   const consumerWs = await fabric.createStreamReader(
     streamName,
     window.UniqueID,
-    false
+    false,
+    false,
+    BASE_URL
   );
 
   // Streams

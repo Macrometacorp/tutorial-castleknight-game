@@ -145,7 +145,9 @@ window.initChatEngine = async function () {
   const consumerChat = await window.fabric.createStreamReader(
     CHAT_STREAM_NAME,
     window.UniqueID,
-    false
+    false,
+    false,
+    BASE_URL
   );
 
   consumerChat.on("open", () => {
