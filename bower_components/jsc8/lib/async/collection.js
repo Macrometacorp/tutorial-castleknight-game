@@ -64,20 +64,20 @@ class BaseCollection {
         return indexHandle;
     }
     _get(path, qs) {
-        return this._connection.request({ path: `/collection/${this.name}/${path}`, qs }, res => res.body);
+        return this._connection.request({ path: `/collection/${this.name}/${path}`, qs }, (res) => res.body);
     }
     _put(path, body) {
         return this._connection.request({
             method: "PUT",
             path: `/collection/${this.name}/${path}`,
-            body
-        }, res => res.body);
+            body,
+        }, (res) => res.body);
     }
     get() {
-        return this._connection.request({ path: `/collection/${this.name}` }, res => res.body);
+        return this._connection.request({ path: `/collection/${this.name}` }, (res) => res.body);
     }
     exists() {
-        return this.get().then(() => true, err => {
+        return this.get().then(() => true, (err) => {
             if (error_1.isC8Error(err) && err.errorNum === exports.COLLECTION_NOT_FOUND) {
                 return false;
             }
@@ -88,14 +88,12 @@ class BaseCollection {
         return this._connection.request({
             method: "POST",
             path: "/collection",
-            body: Object.assign({}, properties, { name: this.name, type: this.type })
-        }, res => res.body);
+            body: Object.assign({}, properties, { name: this.name, type: this.type }),
+        }, (res) => res.body);
     }
-    onChange(callback, dcName, subscriptionName = "subs") {
-        this.stream.consumer(subscriptionName, callback, dcName);
-    }
-    closeOnChangeConnection() {
-        this.stream.closeConnections();
+    async onChange(dcName, subscriptionName = "subs") {
+        const otp = await this.stream.getOtp();
+        return this.stream.consumer(subscriptionName, dcName, { otp });
     }
     properties() {
         return this._get("properties");
@@ -107,8 +105,8 @@ class BaseCollection {
         const result = await this._connection.request({
             method: "PUT",
             path: `/collection/${this.name}/rename`,
-            body: { name }
-        }, res => res.body);
+            body: { name },
+        }, (res) => res.body);
         this.name = name;
         this._idPrefix = `${name}/`;
         return result;
@@ -120,16 +118,16 @@ class BaseCollection {
         return this._connection.request({
             method: "DELETE",
             path: `/collection/${this.name}`,
-            qs: opts
-        }, res => res.body);
+            qs: opts,
+        }, (res) => res.body);
     }
     documentExists(documentHandle) {
         return this._connection
             .request({
             method: "HEAD",
-            path: `/${this._documentPath(documentHandle)}`
+            path: `/${this._documentPath(documentHandle)}`,
         }, () => true)
-            .catch(err => {
+            .catch((err) => {
             if (err.statusCode === 404) {
                 return false;
             }
@@ -137,10 +135,10 @@ class BaseCollection {
         });
     }
     document(documentHandle, graceful = false) {
-        const result = this._connection.request({ path: `/${this._documentPath(documentHandle)}` }, res => res.body);
+        const result = this._connection.request({ path: `/${this._documentPath(documentHandle)}` }, (res) => res.body);
         if (!graceful)
             return result;
-        return result.catch(err => {
+        return result.catch((err) => {
             if (error_1.isC8Error(err) && err.errorNum === exports.DOCUMENT_NOT_FOUND) {
                 return null;
             }
@@ -163,8 +161,27 @@ class BaseCollection {
             path: `/${this._documentPath(documentHandle)}`,
             body: newValue,
             qs: opts,
-            headers
-        }, res => res.body);
+            headers,
+        }, (res) => res.body);
+    }
+    replaceDocuments(documents, opts = {}) {
+        var _a;
+        const headers = {};
+        if (typeof opts === "string") {
+            opts = { rev: opts };
+        }
+        if (opts.rev && this._connection.c8Major >= 3) {
+            let rev;
+            (_a = opts, { rev } = _a, opts = __rest(_a, ["rev"]));
+            headers["if-match"] = rev;
+        }
+        return this._connection.request({
+            method: "PUT",
+            path: `/${this._documentPath('')}`,
+            body: documents,
+            qs: opts,
+            headers,
+        }, (res) => res.body);
     }
     update(documentHandle, newValue, opts = {}) {
         var _a;
@@ -182,8 +199,27 @@ class BaseCollection {
             path: `/${this._documentPath(documentHandle)}`,
             body: newValue,
             qs: opts,
-            headers
-        }, res => res.body);
+            headers,
+        }, (res) => res.body);
+    }
+    updateDocuments(documents, opts = {}) {
+        var _a;
+        const headers = {};
+        if (typeof opts === "string") {
+            opts = { rev: opts };
+        }
+        if (opts.rev && this._connection.c8Major >= 3) {
+            let rev;
+            (_a = opts, { rev } = _a, opts = __rest(_a, ["rev"]));
+            headers["if-match"] = rev;
+        }
+        return this._connection.request({
+            method: "PATCH",
+            path: `/${this._documentPath('')}`,
+            body: documents,
+            qs: opts,
+            headers,
+        }, (res) => res.body);
     }
     remove(documentHandle, opts = {}) {
         var _a;
@@ -200,44 +236,63 @@ class BaseCollection {
             method: "DELETE",
             path: `/${this._documentPath(documentHandle)}`,
             qs: opts,
-            headers
-        }, res => res.body);
+            headers,
+        }, (res) => res.body);
+    }
+    removeDocuments(documents, opts = {}) {
+        var _a;
+        const headers = {};
+        if (typeof opts === "string") {
+            opts = { rev: opts };
+        }
+        if (opts.rev && this._connection.c8Major >= 3) {
+            let rev;
+            (_a = opts, { rev } = _a, opts = __rest(_a, ["rev"]));
+            headers["if-match"] = rev;
+        }
+        return this._connection.request({
+            method: "DELETE",
+            path: `/${this._documentPath('')}`,
+            body: documents,
+            qs: opts,
+            headers,
+        }, (res) => res.body);
     }
     import(data, _a = {}) {
         var { type = "auto" } = _a, opts = __rest(_a, ["type"]);
         if (Array.isArray(data)) {
-            data = data.map(line => JSON.stringify(line)).join("\r\n") + "\r\n";
+            data = data.map((line) => JSON.stringify(line)).join("\r\n") + "\r\n";
         }
         return this._connection.request({
             method: "POST",
             path: "/import",
             body: data,
             isBinary: true,
-            qs: Object.assign({ type: type === null ? undefined : type }, opts, { collection: this.name })
-        }, res => res.body);
+            qs: Object.assign({ type: type === null ? undefined : type }, opts, { collection: this.name }),
+        }, (res) => res.body);
     }
     indexes() {
         return this._connection.request({
             path: "/index",
-            qs: { collection: this.name }
-        }, res => res.body.indexes);
+            qs: { collection: this.name },
+        }, (res) => res.body.indexes);
     }
-    index(indexHandle) {
-        return this._connection.request({ path: `/index/${this._indexHandle(indexHandle)}` }, res => res.body);
+    index(indexName) {
+        return this._connection.request({ path: `/index/${this._idPrefix}${indexName}` }, (res) => res.body);
     }
     createIndex(details) {
         return this._connection.request({
             method: "POST",
             path: "/index",
             body: details,
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
-    dropIndex(indexHandle) {
+    dropIndex(indexName) {
         return this._connection.request({
             method: "DELETE",
-            path: `/index/${this._indexHandle(indexHandle)}`
-        }, res => res.body);
+            path: `/index/${this._idPrefix}${indexName}`,
+        }, (res) => res.body);
     }
     createCapConstraint(opts) {
         if (typeof opts === "number") {
@@ -247,8 +302,8 @@ class BaseCollection {
             method: "POST",
             path: "/index",
             body: Object.assign({}, opts, { type: "cap" }),
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
     createHashIndex(fields, opts) {
         if (typeof fields === "string") {
@@ -261,8 +316,8 @@ class BaseCollection {
             method: "POST",
             path: "/index",
             body: Object.assign({ unique: false }, opts, { type: "hash", fields: fields }),
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
     createSkipList(fields, opts) {
         if (typeof fields === "string") {
@@ -275,8 +330,8 @@ class BaseCollection {
             method: "POST",
             path: "/index",
             body: Object.assign({ unique: false }, opts, { type: "skiplist", fields: fields }),
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
     createPersistentIndex(fields, opts) {
         if (typeof fields === "string") {
@@ -289,8 +344,8 @@ class BaseCollection {
             method: "POST",
             path: "/index",
             body: Object.assign({ unique: false }, opts, { type: "persistent", fields: fields }),
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
     createGeoIndex(fields, opts) {
         if (typeof fields === "string") {
@@ -300,8 +355,8 @@ class BaseCollection {
             method: "POST",
             path: "/index",
             body: Object.assign({}, opts, { fields, type: "geo" }),
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
     createFulltextIndex(fields, minLength) {
         if (typeof fields === "string") {
@@ -311,8 +366,19 @@ class BaseCollection {
             method: "POST",
             path: "/index",
             body: { fields, minLength, type: "fulltext" },
-            qs: { collection: this.name }
-        }, res => res.body);
+            qs: { collection: this.name },
+        }, (res) => res.body);
+    }
+    createTtlIndex(fields, expireAfter) {
+        if (typeof fields === "string") {
+            fields = [fields];
+        }
+        return this._connection.request({
+            method: "POST",
+            path: "/index",
+            body: { fields, expireAfter, type: "ttl" },
+            qs: { collection: this.name },
+        }, (res) => res.body);
     }
 }
 exports.BaseCollection = BaseCollection;
@@ -330,15 +396,15 @@ class DocumentCollection extends BaseCollection {
                 method: "POST",
                 path: "/document",
                 body: data,
-                qs: Object.assign({}, opts, { collection: this.name })
-            }, res => res.body);
+                qs: Object.assign({}, opts, { collection: this.name }),
+            }, (res) => res.body);
         }
         return this._connection.request({
             method: "POST",
             path: `/document/${this.name}`,
             body: data,
-            qs: opts
-        }, res => res.body);
+            qs: opts,
+        }, (res) => res.body);
     }
 }
 exports.DocumentCollection = DocumentCollection;
@@ -372,24 +438,24 @@ class EdgeCollection extends BaseCollection {
                 method: "POST",
                 path: "/edge",
                 body: data,
-                qs: Object.assign({}, opts, { collection: this.name, from: data._from, to: data._to })
-            }, res => res.body);
+                qs: Object.assign({}, opts, { collection: this.name, from: data._from, to: data._to }),
+            }, (res) => res.body);
         }
         return this._connection.request({
             method: "POST",
             path: "/document",
             body: data,
-            qs: Object.assign({}, opts, { collection: this.name })
-        }, res => res.body);
+            qs: Object.assign({}, opts, { collection: this.name }),
+        }, (res) => res.body);
     }
     _edges(documentHandle, direction) {
         return this._connection.request({
             path: `/edges/${this.name}`,
             qs: {
                 direction,
-                vertex: this._documentHandle(documentHandle)
-            }
-        }, res => res.body.edges);
+                vertex: this._documentHandle(documentHandle),
+            },
+        }, (res) => res.body.edges);
     }
     edges(vertex) {
         return this._edges(vertex, undefined);
@@ -404,8 +470,8 @@ class EdgeCollection extends BaseCollection {
         return this._connection.request({
             method: "POST",
             path: "/traversal",
-            body: Object.assign({}, opts, { startVertex, edgeCollection: this.name })
-        }, res => res.body.result);
+            body: Object.assign({}, opts, { startVertex, edgeCollection: this.name }),
+        }, (res) => res.body.result);
     }
 }
 exports.EdgeCollection = EdgeCollection;

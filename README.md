@@ -12,7 +12,7 @@ In Config.js, edit the following parameters:-
 
 ```js
     var cluster = "gdn1.prod.macrometa.io";
-    var email = "demo@macrometa.io";
+    var email = "xxxx@macrometa.io";
     var fabric_name = "fabric";
     var password = "password";
 ```

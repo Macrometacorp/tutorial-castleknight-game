@@ -40,6 +40,10 @@ async function collection() {
   const res = await fabric.login(email, password);
   window.TENANT = res.tenant;
   fabric.useFabric(fabric_name);
+
+  const allStreamsRes = await fabric.getStreams(true);
+  window.allStreams = allStreamsRes.result;
+
   const collection = fabric.collection("occupancy");
   const result = await collection.exists();
   if (result === false) {
@@ -51,8 +55,15 @@ async function collection() {
 
   // create chat stream
   const chatStream = fabric.stream(CHAT_STREAM_NAME, false);
-  await chatStream.createStream();
-  window.chatStreamTopic = chatStream.topic;
+  const exists = !!window.allStreams.find(
+    (stream) => stream.topic === `c8globals.${CHAT_STREAM_NAME}`
+  );
+  console.log(`${CHAT_STREAM_NAME} exists=${exists}`);
+  if (!exists) {
+    await chatStream.createStream();
+  }
+  window.chatStream = chatStream;
+  // window.chatStreamTopic = chatStream.topic;
 }
 
 async function init(currentLevel = 0) {
@@ -66,12 +77,22 @@ async function init(currentLevel = 0) {
   // create streams
   const streamName = `stream-level-${currentLevel}`;
   const stream = fabric.stream(streamName, false);
-  await stream.createStream();
+
+  const exists = !!window.allStreams.find(
+    (stream) => stream.topic === `c8globals.${streamName}`
+  );
+  console.log(`${streamName} exists=${exists}`);
+  if (!exists) {
+    await stream.createStream();
+  }
+
+  const consumerOtp = await stream.getOtp();
+  const producerOtp = await stream.getOtp();
   topic = stream.topic;
 
-  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
+  var producerURL = `wss://${BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}?otp=${producerOtp}`;
 
-  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}`;
+  var consumerURL = `wss://${BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${fabric_name}/${topic}/${window.UniqueID}?otp=${consumerOtp}`;
   // Streams
   var consumer = (window.macrometaConsumer = new WebSocket(consumerURL));
 
@@ -83,23 +104,23 @@ async function init(currentLevel = 0) {
     console.log("Failed to establish WS connection for level");
   };
 
-  consumer.onclose = event => {
+  consumer.onclose = (event) => {
     console.log("Closing WS connection for level");
   };
 
-  consumer.onmessage = message => {
+  consumer.onmessage = (message) => {
     const receiveMsg = JSON.parse(message.data);
     const ackMsg = { messageId: receiveMsg.messageId };
     consumer.send(JSON.stringify(ackMsg));
     message = JSON.parse(message.data);
     message.properties.position = {
       x: message.properties.x,
-      y: message.properties.y
+      y: message.properties.y,
     };
     var messageEvent = {
       message: message.properties,
       sendByPost: false, // true to send via posts
-      timeToken: message.properties.timeToken || 0
+      timeToken: message.properties.timeToken || 0,
     };
     if (message.payload !== "noop") {
       if (messageEvent.message.macrometaType == TYPE_MESSAGE) {
@@ -193,11 +214,11 @@ async function init(currentLevel = 0) {
       macrometaType: TYPE_MESSAGE,
       int: true,
       sendToRightPlayer: window.UniqueID,
-      timeToken: Date.now()
-    }
+      timeToken: Date.now(),
+    },
   });
   var producer = (window.macrometaProducer = new WebSocket(producerURL));
-  producer.onclose = event => {
+  producer.onclose = (event) => {
     console.log("Document producer closed", event);
   };
   producer.onopen = () => {
@@ -222,16 +243,16 @@ function start() {
     makeOccupancyQuery(QUERY_READ);
   }, 1000);
 
-  window.globalUnsubscribe = function() {
+  window.globalUnsubscribe = function () {
     makeOccupancyQuery(QUERY_UPDATE, false);
     var obj = {
       uuid: window.UniqueID,
       action: window.PRESENCE_ACTION_LEAVE,
-      macrometaType: TYPE_PRESENCE
+      macrometaType: TYPE_PRESENCE,
     };
     var jsonString = JSON.stringify({
       payload: "realDataPresence",
-      properties: obj
+      properties: obj,
     });
     window.macrometaProducer.send(jsonString);
     console.log("I unsubscribed and sent something");
@@ -240,7 +261,7 @@ function start() {
   };
 
   // If person leaves or refreshes the window, run the unsubscribe function
-  window.addEventListener("beforeunload", event => {
+  window.addEventListener("beforeunload", (event) => {
     console.log("interfere with close tab");
     window.globalUnsubscribe();
 
@@ -289,20 +310,20 @@ function updateOccupancyText() {
   window.text1 = `Level 1 Occupancy: ${allOccupancyObj[0]}`;
   window.text2 = `Level 2 Occupancy: ${allOccupancyObj[1]}`;
   window.text3 = `Level 3 Occupancy: ${allOccupancyObj[2]}`;
-  window.textObject1.setText(window.text1);
-  window.textObject2.setText(window.text2);
-  window.textObject3.setText(window.text3);
+  window.textObject1 && window.textObject1.setText(window.text1);
+  window.textObject1 && window.textObject2.setText(window.text2);
+  window.textObject1 && window.textObject3.setText(window.text3);
 }
 
 function getLevelState(currentLevel) {
   return game.cache.getJSON(`level:${currentLevel}`);
 }
 
-window.createMyConnection = function(currentLevel) {
+window.createMyConnection = function (currentLevel) {
   init(currentLevel);
 };
 
-window.sendKeyMessage = keyMessage => {
+window.sendKeyMessage = (keyMessage) => {
   try {
     if (window.globalMyHero) {
       keyMessage.uuid = window.UniqueID;
@@ -315,7 +336,7 @@ window.sendKeyMessage = keyMessage => {
       window.macrometaProducer.send(
         JSON.stringify({
           payload: "rD",
-          properties: keyMessage
+          properties: keyMessage,
         })
       );
     }
@@ -351,15 +372,15 @@ window.addEventListener("load", () => {
   init();
   start();
 
-  window.StartLoading = function() {
+  window.StartLoading = function () {
     var obj = {
       uuid: window.UniqueID,
       action: window.PRESENCE_ACTION_JOIN,
-      macrometaType: TYPE_PRESENCE
+      macrometaType: TYPE_PRESENCE,
     };
     var jsonString = JSON.stringify({
       payload: "realDataPresence",
-      properties: obj
+      properties: obj,
     });
     console.log("attempt start loading");
     window.macrometaProducer.send(jsonString);

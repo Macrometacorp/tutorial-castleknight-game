@@ -19,7 +19,7 @@ export interface RequestOptions {
     expectBinary: boolean;
 }
 export interface RequestFunction {
-    (opts: RequestOptions, cb: Errback<C8jsResponse>): void;
+    (opts: RequestOptions, cb: Errback<C8jsResponse | any>): void;
     close?: () => void;
 }
 export declare const isBrowser: boolean;

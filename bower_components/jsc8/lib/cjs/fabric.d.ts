@@ -1,6 +1,6 @@
 import { C8QLLiteral, C8QLQuery } from "./c8ql-query";
 import { C8Collection, DocumentCollection, EdgeCollection } from "./collection";
-import { Config } from "./connection";
+import { Config, Connection } from "./connection";
 import { ArrayCursor } from "./cursor";
 import { Graph } from "./graph";
 import { Tenant } from "./tenant";
@@ -72,7 +72,7 @@ export interface CreateFabricOptions {
     spotDc?: string;
 }
 export declare class Fabric {
-    private _connection;
+    protected _connection: Connection;
     constructor(config?: Config);
     readonly name: string | null;
     route(path?: string, headers?: Object): Route;
@@ -121,15 +121,17 @@ export declare class Fabric {
     tenant(email: string, tenantName?: string): Tenant;
     listTenants(): Promise<any>;
     stream(streamName: string, local: boolean, isCollectionStream?: boolean): Stream;
-    getStreams(): Promise<any>;
+    getStreams(global?: boolean | undefined): Promise<any>;
+    getAllStreams(): Promise<any>;
     listPersistentStreams(local?: boolean): Promise<any>;
     clearBacklog(): Promise<any>;
     clearSubscriptionBacklog(subscription: string): Promise<any>;
     unsubscribe(subscription: string): Promise<any>;
     getAllEdgeLocations(): Promise<any>;
+    getTenantEdgeLocations(): Promise<any>;
     getLocalEdgeLocation(): Promise<any>;
     changeEdgeLocationSpotStatus(dcName: string, isSpot: boolean): Promise<any>;
-    user(user: string, email: string): User;
+    user(user: string, email?: string): User;
     getAllUsers(): Promise<any>;
     listSavedQueries(): Promise<any>;
     saveQuery(name: string, parameter: any, value: string): any;

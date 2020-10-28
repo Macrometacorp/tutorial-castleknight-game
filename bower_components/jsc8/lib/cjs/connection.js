@@ -12,8 +12,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const querystring_1 = require("querystring");
 const error_1 = require("./error");
 const request_1 = require("./util/request");
+const jwtDecode = require("jwt-decode");
 const LinkedList = require("linkedlist/lib/linkedlist");
-const MIME_JSON = /\/(json|javascript)(\W|$)/;
+exports.MIME_JSON = /\/(json|javascript)(\W|$)/;
 const LEADER_ENDPOINT_HEADER = "x-c8-endpoint";
 function isSystemError(err) {
     return (Object.getPrototypeOf(err) === Error.prototype &&
@@ -37,6 +38,9 @@ class Connection {
         if (config.c8Version !== undefined) {
             this._c8Version = config.c8Version;
         }
+        if (config.fabricName) {
+            this._fabricName = config.fabricName;
+        }
         if (config.isAbsolute) {
             this._fabricName = false;
             this._tenantName = false;
@@ -48,6 +52,15 @@ class Connection {
         if (this._agentOptions.keepAlive)
             this._maxTasks *= 2;
         this._headers = Object.assign({}, config.headers);
+        if (config.token) {
+            this._headers = Object.assign({}, this._headers, { authorization: `Bearer ${config.token}` });
+            const { tenant } = jwtDecode(config.token);
+            this._tenantName = tenant;
+        }
+        if (config.apiKey) {
+            this._headers = Object.assign({}, this._headers, { authorization: `apikey ${config.apiKey}` });
+            this._tenantName = this.extractTenantName(config.apiKey);
+        }
         this._loadBalancingStrategy = config.loadBalancingStrategy || "NONE";
         this._useFailOver = this._loadBalancingStrategy !== "ROUND_ROBIN";
         if (config.maxRetries === false) {
@@ -63,7 +76,7 @@ class Connection {
                 ? config.url
                 : [config.url]
             : ["https://test.macrometa.io"];
-        const apiUrls = urls.map(url => {
+        const apiUrls = urls.map((url) => {
             return `https://api-${url.split("https://")[1]}`;
         });
         this.addToHostList(apiUrls);
@@ -75,7 +88,9 @@ class Connection {
         }
     }
     get _fabricPath() {
-        return this._fabricName === false ? "" : `/_tenant/${this._tenantName}/_fabric/${this._fabricName}`;
+        return this._fabricName === false
+            ? ""
+            : `/_tenant/${this._tenantName}/_fabric/${this._fabricName}`;
     }
     _runQueue() {
         if (!this._queue.length || this._activeTasks >= this._maxTasks)
@@ -111,20 +126,39 @@ class Connection {
                 }
             }
             else {
-                const response = res;
-                if (response.statusCode === 503 &&
-                    response.headers[LEADER_ENDPOINT_HEADER]) {
-                    const url = response.headers[LEADER_ENDPOINT_HEADER];
-                    const [index] = this.addToHostList(url);
-                    task.host = index;
-                    if (this._activeHost === host) {
-                        this._activeHost = index;
+                if (request_1.isBrowser && this._agent) {
+                    const response = res;
+                    if (response.status === 503 &&
+                        response.headers.get(LEADER_ENDPOINT_HEADER)) {
+                        const url = response.headers.get(LEADER_ENDPOINT_HEADER);
+                        const [index] = this.addToHostList(url);
+                        task.host = index;
+                        if (this._activeHost === host) {
+                            this._activeHost = index;
+                        }
+                        this._queue.push(task);
                     }
-                    this._queue.push(task);
+                    else {
+                        response.host = host;
+                        task.resolve(response);
+                    }
                 }
                 else {
-                    response.host = host;
-                    task.resolve(response);
+                    const response = res;
+                    if (response.statusCode === 503 &&
+                        response.headers[LEADER_ENDPOINT_HEADER]) {
+                        const url = response.headers[LEADER_ENDPOINT_HEADER];
+                        const [index] = this.addToHostList(url);
+                        task.host = index;
+                        if (this._activeHost === host) {
+                            this._activeHost = index;
+                        }
+                        this._queue.push(task);
+                    }
+                    else {
+                        response.host = host;
+                        task.resolve(response);
+                    }
                 }
             }
             this._runQueue();
@@ -156,11 +190,11 @@ class Connection {
         return url;
     }
     addToHostList(urls) {
-        const cleanUrls = (Array.isArray(urls) ? urls : [urls]).map(url => this._sanitizeEndpointUrl(url));
-        const newUrls = cleanUrls.filter(url => this._urls.indexOf(url) === -1);
+        const cleanUrls = (Array.isArray(urls) ? urls : [urls]).map((url) => this._sanitizeEndpointUrl(url));
+        const newUrls = cleanUrls.filter((url) => this._urls.indexOf(url) === -1);
         this._urls.push(...newUrls);
         this._hosts.push(...newUrls.map((url) => request_1.createRequest(url, this._agentOptions, this._agent)));
-        return cleanUrls.map(url => this._urls.indexOf(url));
+        return cleanUrls.map((url) => this._urls.indexOf(url));
     }
     get c8Major() {
         return Math.floor(this._c8Version / 10000);
@@ -198,6 +232,11 @@ class Connection {
                 host.close();
         }
     }
+    extractTenantName(apiKey) {
+        let apiKeyArr = apiKey.split(".");
+        apiKeyArr.splice(-2, 2);
+        return apiKeyArr.join(".");
+    }
     request(_a, getter) {
         var { host, method = "GET", body, expectBinary = false, isBinary = false, headers } = _a, urlInfo = __rest(_a, ["host", "method", "body", "expectBinary", "isBinary", "headers"]);
         return new Promise((resolve, reject) => {
@@ -223,52 +262,79 @@ class Connection {
                     headers: Object.assign({}, extraHeaders, headers),
                     method,
                     expectBinary,
-                    body
+                    body,
                 },
                 reject,
                 resolve: (res) => {
-                    const contentType = res.headers["content-type"];
-                    let parsedBody = undefined;
-                    if (res.body.length && contentType && contentType.match(MIME_JSON)) {
-                        try {
-                            parsedBody = res.body;
-                            parsedBody = JSON.parse(parsedBody);
-                        }
-                        catch (e) {
-                            if (!expectBinary) {
-                                if (typeof parsedBody !== "string") {
-                                    parsedBody = res.body.toString("utf-8");
+                    if (request_1.isBrowser && this._agent) {
+                        res
+                            .json()
+                            .then((data) => {
+                            if (data.hasOwnProperty("error") &&
+                                data.hasOwnProperty("code") &&
+                                data.hasOwnProperty("errorMessage") &&
+                                data.hasOwnProperty("errorNum")) {
+                                reject(new error_1.C8Error({ body: data }));
+                            }
+                            else if (res.status && res.status >= 400) {
+                                reject(new error_1.HttpError({ body: data }));
+                            }
+                            else {
+                                resolve(getter
+                                    ? getter({ body: data })
+                                    : { body: data });
+                            }
+                        })
+                            .catch((err) => {
+                            reject(err);
+                        });
+                    }
+                    else {
+                        const contentType = res.headers["content-type"];
+                        let parsedBody = undefined;
+                        if (res.body.length &&
+                            contentType &&
+                            contentType.match(exports.MIME_JSON)) {
+                            try {
+                                parsedBody = res.body;
+                                parsedBody = JSON.parse(parsedBody);
+                            }
+                            catch (e) {
+                                if (!expectBinary) {
+                                    if (typeof parsedBody !== "string") {
+                                        parsedBody = res.body.toString("utf-8");
+                                    }
+                                    e.response = res;
+                                    reject(e);
+                                    return;
                                 }
-                                e.response = res;
-                                reject(e);
-                                return;
                             }
                         }
-                    }
-                    else if (res.body && !expectBinary) {
-                        parsedBody = res.body.toString("utf-8");
-                    }
-                    else {
-                        parsedBody = res.body;
-                    }
-                    if (parsedBody &&
-                        parsedBody.hasOwnProperty("error") &&
-                        parsedBody.hasOwnProperty("code") &&
-                        parsedBody.hasOwnProperty("errorMessage") &&
-                        parsedBody.hasOwnProperty("errorNum")) {
-                        res.body = parsedBody;
-                        reject(new error_1.C8Error(res));
-                    }
-                    else if (res.statusCode && res.statusCode >= 400) {
-                        res.body = parsedBody;
-                        reject(new error_1.HttpError(res));
-                    }
-                    else {
-                        if (!expectBinary)
+                        else if (res.body && !expectBinary) {
+                            parsedBody = res.body.toString("utf-8");
+                        }
+                        else {
+                            parsedBody = res.body;
+                        }
+                        if (parsedBody &&
+                            parsedBody.hasOwnProperty("error") &&
+                            parsedBody.hasOwnProperty("code") &&
+                            parsedBody.hasOwnProperty("errorMessage") &&
+                            parsedBody.hasOwnProperty("errorNum")) {
                             res.body = parsedBody;
-                        resolve(getter ? getter(res) : res);
+                            reject(new error_1.C8Error(res));
+                        }
+                        else if (res.statusCode && res.statusCode >= 400) {
+                            res.body = parsedBody;
+                            reject(new error_1.HttpError(res));
+                        }
+                        else {
+                            if (!expectBinary)
+                                res.body = parsedBody;
+                            resolve(getter ? getter(res) : res);
+                        }
                     }
-                }
+                },
             });
             this._runQueue();
         });

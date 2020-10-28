@@ -1,4 +1,4 @@
-var cluster = "gdn1.prod.macrometa.io";
-var email = "demo@macrometa.io";
+var cluster = "qa1-sfo2.eng3.macrometa.io";
+var email = "xxxx@macrometa.io";
 var fabric_name = "_system";
-var password = "demo";
+var password = "xxxx";

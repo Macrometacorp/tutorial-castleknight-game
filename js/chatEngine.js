@@ -13,7 +13,7 @@ function generateName() {
     return color + '-' /*+ animal*/ + getRandomInt();
 }
 
-window.initChatEngine = function () {
+window.initChatEngine = async function () {
     // Don't draw the Chat UI more than once
     if (document.getElementById('chatLog')) return;
 
@@ -32,8 +32,14 @@ window.initChatEngine = function () {
     </div>
     `;
 
-    let producerURL = `wss://${window.BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}/${window.UniqueID}`;
-    let consumerURL = `wss://${window.BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}/${window.UniqueID}`;
+
+    const chatStreamTopic = window.chatStream.topic;
+
+    const producerOtp = await window.chatStream.getOtp();
+    const consumerOtp = await window.chatStream.getOtp();
+
+    let producerURL = `wss://${window.BASE_URL}/_ws/ws/v2/producer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}/${window.UniqueID}?otp=${producerOtp}`;
+    let consumerURL = `wss://${window.BASE_URL}/_ws/ws/v2/consumer/persistent/${window.TENANT}/c8global.${window.DB_NAME}/${chatStreamTopic}/${window.UniqueID}?otp=${consumerOtp}`;
 
     var consumer = new WebSocket(consumerURL);
 
