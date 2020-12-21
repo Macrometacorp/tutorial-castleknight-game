@@ -11,7 +11,7 @@ This real time multiplayer game is a collaborative puzzle game that encourages y
 In Config.js, edit the following parameters:-
 
 ```js
-    var cluster = "gdn1.prod.macrometa.io";
+    var cluster = "gdn.paas.prod.macrometa.io";
     var email = "xxxx@macrometa.io";
     var fabric_name = "fabric";
     var password = "password";
